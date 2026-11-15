@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Gemeindekalender Wolfenbüttel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
+<style>
+/* Layout: Agenda-Liste nach Monaten, links Datumsblock, rechts Termine; Sonntage hinterlegt, Filterleiste oben klebend */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --sunday:#e9eef5; --fg:#1b2533; --muted:#5d6b7d; --line:#d6dde7;
+  --accent:#2f5d8c; --accent-soft:#dce7f3;
+  --c-gd:#2f5d8c; --c-gem:#3c7a4f; --c-jug:#b06a12; --c-amt:#6b5a8c; --c-off:#9a3b3b; --c-blume:#a8436f;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --surface:#18202a; --sunday:#1d2733; --fg:#e6ebf2; --muted:#9aa8b9; --line:#2b3644;
+  --accent:#8fb6e0; --accent-soft:#22344a;
+  --c-gd:#8fb6e0; --c-gem:#86c79a; --c-jug:#e5a858; --c-amt:#b7a6dc; --c-off:#e49393; --c-blume:#e79ac0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --surface:#18202a; --sunday:#1d2733; --fg:#e6ebf2; --muted:#9aa8b9; --line:#2b3644;
+  --accent:#8fb6e0; --accent-soft:#22344a;
+  --c-gd:#8fb6e0; --c-gem:#86c79a; --c-jug:#e5a858; --c-amt:#b7a6dc; --c-off:#e49393; --c-blume:#e79ac0; color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:48px}
+header h1{font-family:var(--display);font-weight:700;font-size:1.9rem;line-height:1.1;margin:0;text-wrap:balance}
+.stand{color:var(--muted);font-size:.85rem;margin:.4rem 0 0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;margin-top:12px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.chip:focus-visible,.today-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.today-btn{margin-left:auto;font:inherit;font-size:.85rem;background:none;border:0;color:var(--accent);text-decoration:underline;cursor:pointer;padding:6px 2px}
+h2{font-family:var(--display);font-weight:500;font-size:1.4rem;margin:28px 0 8px;scroll-margin-top:130px}
+.day{display:grid;grid-template-columns:58px 1fr;gap:12px;padding:10px 10px;border-radius:8px;scroll-margin-top:130px}
+.day + .day{margin-top:2px}
+.day.sun{background:var(--sunday)}
+.day.past{opacity:.5}
+.day.today{outline:2px solid var(--accent);outline-offset:-2px}
+.date{text-align:center;font-variant-numeric:tabular-nums}
+.date .wd{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.date .n{display:block;font-family:var(--display);font-size:1.6rem;font-weight:700;line-height:1}
+.items{min-width:0;display:flex;flex-direction:column;gap:8px}
+.feast{font-family:var(--display);font-weight:700;font-size:1.02rem;color:var(--accent)}
+.ev{display:grid;grid-template-columns:46px 1fr;gap:8px;align-items:baseline}
+.ev .t{font-variant-numeric:tabular-nums;font-weight:700;font-size:.9rem}
+.ev .what{min-width:0;padding-left:9px;border-left:3px solid var(--cat)}
+.ev .ti{font-weight:700}
+.ev .sub{color:var(--muted);font-size:.9rem}
+.ev .note{font-size:.85rem;color:var(--muted);font-style:italic}
+.tag{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:4px;padding:0 5px;margin:3px 4px 0 0;color:var(--muted);background:var(--surface)}
+.tag.key{border-color:var(--accent);color:var(--accent)}
+.ev.cancel .ti{color:var(--c-off)}
+.tag.orgel{border-color:var(--c-amt);color:var(--c-amt)}
+.tag.blumen{border-color:var(--c-blume);color:var(--c-blume)}
+.jump{margin-left:auto}
+.jump select,.namebar select{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 10px}
+.namebar{display:none;flex-basis:100%;gap:8px;align-items:center;font-size:.85rem;color:var(--muted)}
+.namebar.on{display:flex}
+.namebar select{min-width:0;max-width:60vw}
+.namebar select.set{border-color:var(--accent);color:var(--accent);font-weight:700}
+.namebar .count{margin-left:auto;font-variant-numeric:tabular-nums}
+.none{color:var(--muted);padding:24px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+a.bibel{color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-weight:700}
+a.bibel:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.lut{font-size:.72rem;font-weight:400;margin-left:5px;text-decoration:none;display:inline-block}
+.swap{color:var(--c-jug);font-weight:700}
+.hl-red{color:var(--c-off);font-weight:700}
+.empty{color:var(--muted);font-size:.9rem;padding:4px 0 4px 70px}
+.cat-gd{--cat:var(--c-gd)} .cat-gem{--cat:var(--c-gem)} .cat-jug{--cat:var(--c-jug)} .cat-amt{--cat:var(--c-amt)} .cat-off{--cat:var(--c-off)}
+.legend-dot.cat-gd{color:var(--c-gd)} .legend-dot.cat-gem{color:var(--c-gem)} .legend-dot.cat-jug{color:var(--c-jug)} .legend-dot.cat-amt{color:var(--c-amt)} .legend-dot.cat-tuer{color:var(--accent)} .legend-dot.cat-orgel{color:var(--c-amt)} .cat-orgel{--cat:var(--c-amt)} .legend-dot.cat-rein{color:var(--c-gem)} .cat-rein{--cat:var(--c-gem)} .cat-tuer{--cat:var(--accent)}
+.legend-dot.cat-blumen{color:var(--c-blume)} .cat-blumen{--cat:var(--c-blume)}
+.chip[aria-pressed="true"] .legend-dot{color:var(--bg)}
+details{margin-top:28px;color:var(--muted);font-size:.88rem}
+summary{cursor:pointer;color:var(--fg);font-weight:700}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0 0}
+dt{font-weight:700;color:var(--fg)}
+dd{margin:0}
+@media (max-width:420px){.day{grid-template-columns:48px 1fr;gap:10px;padding:10px 6px}.ev{grid-template-columns:42px 1fr}.empty{padding-left:58px}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Gemeindekalender Wolfenbüttel</h1>
+    <p class="stand">Stand: Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan November 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="Filter">
+    <button class="chip" id="f-all" data-f="all" aria-pressed="true">Alle</button>
+    <button class="chip" id="f-gd" data-f="gd" aria-pressed="false"><span class="dot legend-dot cat-gd"></span>Gottesdienste</button>
+    <button class="chip" id="f-gem" data-f="gem" aria-pressed="false"><span class="dot legend-dot cat-gem"></span>Gemeinde</button>
+    <button class="chip" id="f-jug" data-f="jug" aria-pressed="false"><span class="dot legend-dot cat-jug"></span>Jugend &amp; Kinder</button>
+    <button class="chip" id="f-amt" data-f="amt" aria-pressed="false"><span class="dot legend-dot cat-amt"></span>Ämter &amp; Bezirk</button>
+    <button class="chip" id="f-rein" data-f="rein" aria-pressed="false"><span class="dot legend-dot cat-rein"></span>Reinigung</button>
+    <button class="chip" id="f-orgel" data-f="orgel" aria-pressed="false"><span class="dot legend-dot cat-orgel"></span>Orgel</button>
+    <button class="chip" id="f-blumen" data-f="blumen" aria-pressed="false"><span class="dot legend-dot cat-blumen"></span>Blumen</button>
+    <button class="chip" id="f-tuer" data-f="tuer" aria-pressed="false"><span class="dot legend-dot cat-tuer"></span>Türdienst</button>
+    <label class="jump"><span class="sr">Monat</span><select id="monat" aria-label="Zu Monat springen"></select></label>
+    <div class="namebar" id="namebar">
+      <label for="person" id="person-l">Name</label>
+      <select id="person"></select>
+      <span class="count" id="count" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <main id="cal"></main>
+
+
+  <details>
+    <summary>Abkürzungen</summary>
+    <dl>
+      <dt>GD</dt><dd>Gottesdienst</dd>
+      <dt>StAP</dt><dd>Stammapostel (Mutschler)</dd>
+      <dt>AP / BAp</dt><dd>Apostel / Bezirksapostel</dd>
+      <dt>BÄV</dt><dd>Bezirksämterversammlung</dd>
+      <dt>BVV</dt><dd>Bezirksvorsteherversammlung</dd>
+      <dt>VV</dt><dd>Vorsteherversammlung</dd>
+      <dt>VK</dt><dd>Videokonferenz</dd>
+      <dt>JUA</dt><dd>Jugendabend</dd>
+      <dt>ReKo</dt><dd>Religions- und Konfirmandenunterricht</dd>
+      <dt>So/Vo-Schule</dt><dd>Sonntags- und Vorsonntagsschule</dd>
+      <dt>SZ</dt><dd>Salzgitter-Bad</dd>
+      <dt>Ü / IPTV</dt><dd>Übertragung</dd>
+      <dt>Tür</dt><dd>Türschlüsseldienst WF, Gruppe und Namen</dd>
+      <dt>Reinigung</dt><dd>4 Gruppen im 2-Wochen-Wechsel: Mittwoch und der Sonntag danach</dd>
+      <dt>Blumen</dt><dd>Blumendienst: je eine Person für Sonntag und den Mittwoch danach, feste Reihenfolge</dd>
+    </dl>
+  </details>
+</div>
+
+<script>
+// Kategorien: gd Gottesdienst, gem Gemeinde, jug Jugend & Kinder, amt Ämter & Bezirk, off entfällt
+const FEASTS = {
+  "2026-11-01":"Gottesdienst für Entschlafene","2026-11-15":"Volkstrauertag","2026-11-18":"Buß- und Bettag",
+  "2026-11-22":"Totensonntag","2026-11-29":"1. Advent","2026-12-06":"2. Advent","2026-12-13":"3. Advent",
+  "2026-12-20":"4. Advent","2026-12-24":"Heiligabend","2026-12-25":"1. Weihnachtstag","2026-12-26":"2. Weihnachtstag",
+  "2026-12-31":"Silvester",
+  "2027-01-01":"Neujahr","2027-03-21":"Palmsonntag","2027-03-25":"Gründonnerstag","2027-03-26":"Karfreitag",
+  "2027-03-28":"Ostersonntag","2027-03-29":"Ostermontag","2027-05-06":"Christi Himmelfahrt",
+  "2027-05-16":"Pfingstsonntag","2027-05-17":"Pfingstmontag","2027-10-03":"Tag der Deutschen Einheit",
+  "2027-11-14":"Volkstrauertag","2027-11-17":"Buß- und Bettag","2027-11-21":"Totensonntag",
+  "2027-11-28":"1. Advent","2027-12-05":"2. Advent","2027-12-12":"3. Advent","2027-12-19":"4. Advent",
+  "2027-12-24":"Heiligabend","2027-12-25":"1. Weihnachtstag","2027-12-26":"2. Weihnachtstag","2027-12-31":"Silvester"
+};
+
+const EVENTS = [
+  ["2026-11-01","10:00","gd","Gottesdienst für Entschlafene","Stammapostel H. Mutschler",["Übertragung aus Tuttlingen"]],
+  ["2026-11-03","19:00","amt","BÄV mit Apostel","Videokonferenz"],
+  ["2026-11-04","19:30","gd","Gottesdienst","Priester J. Borchert · Kolosser 3,12: Ausrichtung auf Christus",["IPTV aus Wolfenbüttel"]],
+  ["2026-11-07","10:00","gem","Letzte gemeinsame Gartenarbeit","in diesem Jahr"],
+  ["2026-11-08","10:00","gd","Gottesdienst","Priester M. Giugliani · Philipper 3,20.21: Bürger im Himmel",["IPTV aus Seesen"]],
+  ["2026-11-08","","gem","Gemeindekaffee","nach dem Gottesdienst"],
+  ["2026-11-08","","jug","ReKo in Seesen",""],
+  ["2026-11-09","19:30","jug","Jugendbetreuerversammlung","per Video"],
+  ["2026-11-11","19:30","gd","Gottesdienst","Priester U. Götz · Galater 6,9: Gutes tun",["IPTV aus Seesen"]],
+  ["2026-11-12","19:30","amt","Ämterversammlung Bezirk WF","in Salzgitter-Bad"],
+  ["2026-11-14","","amt","Lehrkräftetag in Munster","mit Apostel R. Vicariesmann (Gemeindebrief S. 14)"],
+  ["2026-11-15","10:00","gd","Gottesdienst","Bezirksältester A. Dahlke · Prediger 12,14: Gott ist ein gerechter Richter",["IPTV aus Wolfenbüttel"]],
+  ["2026-11-15","10:00","jug","Jugendgottesdienst in Goslar","Priester M. Peter · Lukas 12,35.36: Wir warten auf den Herrn"],
+  ["2026-11-17","15:00","gem","Bastelnachmittag","Gemeindebrief S. 15"],
+  ["2026-11-17","19:30","jug","Jugendabend","in Salzgitter-Bad"],
+  ["2026-11-18","19:30","gd","Gottesdienst zum Buß- und Bettag","Priester M. Giugliani · Psalm 41,5: Heile mich, ich habe an dir gesündigt",["IPTV aus Wolfenbüttel"]],
+  ["2026-11-19","19:30","jug","Virtueller Stuhlkreis Lehrkräfte",""],
+  ["2026-11-20","19:00","jug","Spieleabend","im Jugendraum"],
+  ["2026-11-20","","amt","PGG 2",""],
+  ["2026-11-21","09:00","gem","Schulung für Ersthelfer","Gemeindebrief S. 14"],
+  ["2026-11-21","","amt","Predigtpraktikum + PGG 2",""],
+  ["2026-11-22","10:00","gd","Gottesdienst","Evangelist P. Syfus · Offenbarung 21,5: Siehe, ich mache alles neu!",["IPTV aus Seesen"]],
+  ["2026-11-22","10:00","jug","Reli-/Konfigottesdienst","Priester K. Krull · Matthäus 1,21"],
+  ["2026-11-22","","jug","ReKo und So/Vo-Schule","mit AM in Wolfenbüttel"],
+  ["2026-11-23","19:00","amt","BÄV Wolfenbüttel","Videokonferenz"],
+  ["2026-11-24","19:30","amt","Örtliche Ämterversammlung",""],
+  ["2026-11-25","19:30","gd","Gottesdienst","Bezirksevangelist H. Bickel · Philipper 4,4: Freude am Herrn",["IPTV aus Seesen"]],
+  ["2026-11-26","10:00","gem","Frühstück beim Löwenbäcker","am Neuen Weg"],
+  ["2026-11-26","19:30","amt","Vorsteherversammlung","in Salzgitter-Bad"],
+  ["2026-11-29","10:00","gd","Gottesdienst zum 1. Advent","Priester M. Giugliani · Lukas 1,30.31: Ankündigung der Geburt Jesu",["IPTV aus Wolfenbüttel"]],
+  ["2026-12-01","19:00","amt","BVV mit Apostel","Videokonferenz"],
+  ["2026-12-01","19:30","jug","Jugendabend","in Salzgitter-Bad"],
+  ["2026-12-02","19:30","gd","Gottesdienst","Lukas 1,41: Eine freudige Begegnung"],
+  ["2026-12-06","10:00","gd","Gottesdienst zum 2. Advent","Matthäus 1,21: Jesus, der Erlöser"],
+  ["2026-12-06","","jug","Jugendgottesdienst in Seesen",""],
+  ["2026-12-09","19:30","gd","Gottesdienst","Lukas 1,46-48: Meine Seele erhebt den Herrn"],
+  ["2026-12-12","","gem","Adventscafé in unserer Kirche","Gemeindebrief S. 15"],
+  ["2026-12-13","10:00","gd","Gottesdienst zum 3. Advent","Johannes 1,5: Das Licht in der Finsternis"],
+  ["2026-12-16","19:30","gd","Gottesdienst","Lukas 12,40: Bereit sein auf den wiederkommenden Herrn"],
+  ["2026-12-20","10:00","gd","Festgottesdienst mit Stammapostel Mutschler","1. Johannes 5,20: Jesus Christus zeigt, wie Gott ist",["Übertragung aus Barnim"]],
+  ["2026-12-23","","off","Kein Gottesdienst",""],
+  ["2026-12-25","","gd","Weihnachtsgottesdienst","Micha 5,1: Weihnachten · Lesung: Lukas 2,1-14",[],"Dein Kinderbeitrag: Weihnachtsgeschichte"],
+  ["2026-12-27","","gd","Jahresabschlussgottesdienst","Psalm 31,16: In Gottes Händen"],
+  ["2026-12-29","","amt","* BAp Krause","Vermerk aus dem Quartalsplan"],
+  ["2026-12-30","","off","Kein Gottesdienst",""],
+  ["2026-12-31","","off","Kein Gottesdienst","Ferien bis 09.01.2027"],
+  ["2027-01-03","","gd","Erster Gottesdienst 2027",""],
+  // 2027 aus dem Quartalsplan (Vorschau)
+  ["2027-03-21","10:00","gd","Gottesdienst mit Stammapostel Mutschler","",["Übertragung aus Erfurt"]],
+  ["2027-04-18","10:00","gd","Konfirmation","mit Gemeinde Bad Harzburg"],
+  ["2027-05-16","10:00","gd","Pfingstgottesdienst mit Stammapostel Mutschler","",["Übertragung aus München"]],
+  ["2027-07-01","16:00","gd","Seniorengottesdienst Bezirke WF und BS","in Wolfenbüttel, Apostel Vicariesmann"],
+  ["2027-08-08","10:00","gd","Gottesdienst mit Apostel Vicariesmann","in Wolfenbüttel, mit Gemeinde Salzgitter-Bad"],
+  ["2027-09-03","","jug","Jugendtag Apostelbereich Mitte-Nord","03.–05.09.2027"],
+  ["2027-11-21","10:00","gd","Ämtergottesdienst mit Stammapostel Mutschler","",["Übertragung aus Winterthur"]],
+  ["2027-11-24","19:30","gd","Gottesdienst mit Bezirksapostel Heynes","in Salzgitter-Bad"],
+  ["2027-12-05","10:00","gd","Gottesdienst mit Stammapostel Mutschler","",["Übertragung aus Dresden"]]
+];
+
+// Türschlüsseldienst WF (Stand 08.11.2026, inkl. Tausche)
+// [Montag der Woche, Gruppe, Namen, getauscht, Namen nur Mittwoch, Namen nur Sonntag]
+const GRUPPEN = {1:"Peter, Dominique, Maurice",2:"Leo, Karsten, Thomas",3:"Uwe, Volker",4:"Markus, Verena",5:"Lukas, Harry, Meikel"};
+const TUER = [
+  ["2026-11-02",4,GRUPPEN[4]],
+  ["2026-11-09",5,"",true,"Lukas, Harry","Dominique, Harry"],
+  ["2026-11-16",1,GRUPPEN[1]],
+  ["2026-11-23",2,GRUPPEN[2]],
+  ["2026-11-30",3,GRUPPEN[3]],
+  ["2026-12-07",4,GRUPPEN[4]],
+  ["2026-12-14",5,GRUPPEN[5]],
+  ["2026-12-21",1,"Leo, Uwe",true],
+  ["2026-12-28",2,GRUPPEN[2]]
+];
+// 2027: KW 1 (ab 04.01.) Gruppe 3, dann fortlaufend 4, 5, 1, 2, 3 …
+(function(){ const d=new Date(2027,0,4); let g=3;
+  for(let i=0;i<52;i++){ const m=new Date(d); m.setDate(d.getDate()+7*i);
+    TUER.push([m.getFullYear()+"-"+String(m.getMonth()+1).padStart(2,"0")+"-"+String(m.getDate()).padStart(2,"0"),g,GRUPPEN[g]]); g=g%5+1; } })();
+
+const WD = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+const MONTHS = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const pad = n => String(n).padStart(2,"0");
+const iso = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const byDe = (a,b) => a.localeCompare(b,"de");
+
+function tuerFor(d){
+  // Woche beginnt Montag
+  const m = new Date(d); const off = (m.getDay()+6)%7; m.setDate(m.getDate()-off);
+  return TUER.find(t=>t[0]===iso(m));
+}
+
+// Reinigungsdienst: 4 Gruppen, je 2 Wochen (Mittwoch + darauffolgender Sonntag), läuft durch (auch ohne Gottesdienst). Start: Mi 04.11.2026 = Gruppe 1
+function reinFor(d){
+  const dow = d.getDay();
+  if(dow!==3 && dow!==0) return 0;
+  const w = new Date(d); if(dow===0) w.setDate(w.getDate()-4); // Sonntag gehört zum Mittwoch davor
+  const n = Math.round((Date.UTC(w.getFullYear(),w.getMonth(),w.getDate()) - Date.UTC(2026,10,4)) / 864e5 / 7);
+  return n<0 ? 0 : Math.floor(n/2)%4 + 1;
+}
+const reinTag = g => `<span class="tag">Reinigungsgruppe ${g}${g===3?` <strong class="hl-red">Verena &amp; Leo</strong>`:""}</span>`;
+
+// Orgeldienst (nur Vornamen), monatlich ergänzen
+const ORGEL = {
+  "2026-11-01":"Übertragung (Frank)","2026-11-04":"Thorsten","2026-11-08":"Werner","2026-11-11":"Frank",
+  "2026-11-15":"Thorsten","2026-11-18":"Thorsten","2026-11-22":"Thorsten · Reli/Konfi: Werner",
+  "2026-11-25":"Jörn","2026-11-29":"Werner"
+};
+const orgelTag = k => ORGEL[k] ? `<span class="tag orgel">Orgel: ${esc(ORGEL[k])}</span>` : "";
+const orgelNamen = s => (s.match(/[A-ZÄÖÜ][a-zäöüß]+/g)||[]).filter(w=>!["Übertragung","Reli","Konfi"].includes(w));
+
+// Blumendienst (Stand 14.11.2026): je Person ein Sonntag + der Mittwoch danach, feste Reihenfolge
+const BLUMEN_REIHE = ["Michaela K.","Dorothee Sch.","Mandy G.","Birka L.","Maria E. Sch.","Gudrun K.","Leona W.","Simone B.","Beate & Sabrina D."];
+const BLUMEN = {};
+(function(){
+  const add = (k,n) => { BLUMEN[k] = n; };
+  const week = (sun,n) => { const d=new Date(sun); add(iso(d),n); d.setDate(d.getDate()+3); add(iso(d),n); };
+  // 2026 laut handschriftlichem Plan
+  const p26 = [["2026-11-01",8],["2026-11-08",0],["2026-11-15",1],["2026-11-22",2],["2026-11-29",3],
+               ["2026-12-06",4],["2026-12-13",5],["2026-12-20",6]];
+  p26.forEach(([k,i])=>{ const [y,m,d]=k.split("-").map(Number); week(new Date(y,m-1,d),BLUMEN_REIHE[i]); });
+  add("2026-12-25",BLUMEN_REIHE[7]); add("2026-12-27",BLUMEN_REIHE[7]); // Weihnachten: Simone B.
+  // 2027 fortlaufend, ab So 03.01. mit Beate & Sabrina D.
+  let i = 8;
+  for(let d=new Date(2027,0,3); d.getFullYear()===2027; d.setDate(d.getDate()+7)){
+    const n = BLUMEN_REIHE[i];
+    if(d.getMonth()===11 && d.getDate()===26){ add("2027-12-25",n); } // Weihnachten analog 2026: 1. Weihnachtstag + Sonntag
+    week(d,n); i=(i+1)%BLUMEN_REIHE.length;
+  }
+})();
+const blumenTag = k => BLUMEN[k] ? `<span class="tag blumen">Blumen: ${esc(BLUMEN[k])}</span>` : "";
+
+// Namensauswahl je Dienst (wird aus den Plänen oben erzeugt)
+const splitNames = s => String(s||"").split(/,\s*/).filter(Boolean);
+const NAMEN = {
+  blumen: [...BLUMEN_REIHE].sort(byDe),
+  orgel: [...new Set(Object.values(ORGEL).flatMap(orgelNamen))].sort(byDe),
+  tuer: [...new Set(TUER.flatMap(t=>[t[2],t[4],t[5]].flatMap(splitNames)))].sort(byDe),
+  rein: ["Gruppe 1","Gruppe 2","Gruppe 3","Gruppe 4"]
+};
+
+// Bibelstellen in der Unterzeile als Link zur Lutherbibel (bibleserver.com, LUT)
+function bibelLinks(html){
+  return html.replace(/((?:[1-5]\. ?)?[A-ZÄÖÜ][a-zäöüß]+) (\d+),(\d+(?:[.\-]\d+)*)/g,(m,buch,kap,vers)=>{
+    const ref = buch.replace(/\s/g,"") + kap + "," + vers.replace(/\./g,"-");
+    return `<a class="bibel" href="https://www.bibleserver.com/LUT/${encodeURIComponent(ref)}" target="_blank" rel="noopener">${m}<span class="lut">Luther ↗</span></a>`;
+  });
+}
+
+let filter = "all", person = {};
+try{ filter = localStorage.getItem("kal-filter") || "all"; }catch(e){}
+try{ person = JSON.parse(localStorage.getItem("kal-person")||"{}") || {}; }catch(e){ person = {}; }
+
+function render(){
+  const todayIso = iso(new Date());
+  const start = new Date(2026,10,1), end = (filter==="tuer"||filter==="rein") ? new Date(2028,0,2) : new Date(2027,11,31);
+  const liste = NAMEN[filter];
+  let pf = (liste && person[filter]) || "";
+  if(pf && !liste.includes(pf)) pf = "";
+  let html = "", month = -1, head = "", hits = 0;
+  const out = s => { html += head + s; head = ""; hits++; };
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    const k = iso(d), dow = d.getDay();
+    if(k < todayIso) continue;
+    if(d.getMonth()!==month){ month=d.getMonth(); head = `<h2 id="m-${d.getFullYear()}-${month+1}">${MONTHS[month]} ${d.getFullYear()}</h2>`; }
+    let evs = EVENTS.filter(e=>e[0]===k);
+    const feast = FEASTS[k];
+    const cancelled = evs.some(e=>e[2]==="off");
+    let tuer = "", tuerNamen = [];
+    if((dow===0||dow===3) && !cancelled){
+      const t = tuerFor(d);
+      if(t){ const names = (dow===3 && t[4]) || (dow===0 && t[5]) || t[2];
+        tuerNamen = splitNames(names);
+        tuer = `<span class="tag key">Tür: Gr. ${t[1]} · ${esc(names).replace(/\b(Leo|Verena)\b/g,'<strong class="hl-red">$1</strong>')}${t[3]?` <span class="swap">getauscht</span>`:""}</span>`;
+      } else tuer = `<span class="tag">Tür: noch nicht eingeteilt</span>`;
+    }
+    const blumen = cancelled ? "" : blumenTag(k);
+    const rg = reinFor(d), rein = orgelTag(k) + blumen + (rg ? reinTag(rg) : "");
+    const gdTime = () => { const gd = evs.find(e=>e[2]==="gd"); return gd&&gd[1]?gd[1]:""; };
+    const single = (cat,title,content) => {
+      const cls = ["day"]; if(dow===0) cls.push("sun"); if(k===todayIso) cls.push("today");
+      return `<section class="${cls.join(" ")}" id="d-${k}"><div class="date"><span class="wd">${WD[dow]}</span><span class="n">${d.getDate()}</span></div><div class="items">${feast?`<div class="feast">${esc(feast)}</div>`:""}<div class="ev cat-${cat}"><span class="t">${cat==="rein"?"":gdTime()}</span><div class="what"><div class="ti">${title}</div><div>${content}</div></div></div></div></section>`;
+    };
+    if(filter==="orgel"){ if(ORGEL[k] && (!pf || orgelNamen(ORGEL[k]).includes(pf))) out(single("orgel","Orgel",orgelTag(k))); continue; }
+    if(filter==="blumen"){ if(blumen && (!pf || BLUMEN[k]===pf)) out(single("blumen","Blumen",blumen)); continue; }
+    if(filter==="rein"){ if(rg && (!pf || pf==="Gruppe "+rg)) out(single("rein","Reinigung",reinTag(rg))); continue; }
+    if(filter==="tuer"){ if(tuer && (!pf || tuerNamen.includes(pf))) out(single("tuer","Türdienst",tuer)); continue; }
+    const shown = evs.filter(e=>filter==="all"||e[2]===filter||(e[2]==="off"&&filter==="gd"));
+    if(!shown.length && !feast && !(filter==="all" && (tuer||rein))) continue;
+    const cls = ["day"]; if(dow===0) cls.push("sun"); if(k<todayIso) cls.push("past"); if(k===todayIso) cls.push("today");
+    let items = feast ? `<div class="feast">${esc(feast)}</div>` : "";
+    shown.sort((a,b)=>(a[1]||"99").localeCompare(b[1]||"99"));
+    shown.forEach((e,i)=>{
+      const tags = (e[5]||[]).map(x=>`<span class="tag">${esc(x)}${x==="Reinigungsgruppe 3"?` <strong class="hl-red">Verena</strong>`:""}</span>`).join("");
+      const tAttach = (i===0 && (e[2]==="gd") && filter!=="amt") ? rein+tuer : "";
+      items += `<div class="ev cat-${e[2]}${e[2]==="off"?" cancel":""}"><span class="t">${e[1]||""}</span><div class="what"><div class="ti">${esc(e[3])}</div>${e[4]?`<div class="sub">${bibelLinks(esc(e[4]))}</div>`:""}${e[6]?`<div class="note">${esc(e[6])}</div>`:""}${tags||tAttach?`<div>${tags}${tAttach}</div>`:""}</div></div>`;
+    });
+    if(!shown.some(e=>e[2]==="gd") && (tuer||rein) && (filter==="all")) items += `<div>${rein}${tuer}</div>`;
+    out(`<section class="${cls.join(" ")}" id="d-${k}"><div class="date"><span class="wd">${WD[dow]}</span><span class="n">${d.getDate()}</span></div><div class="items">${items}</div></section>`);
+  }
+  if(!html) html = `<p class="none">${pf ? `Keine kommenden Termine für ${esc(pf)}.` : "Keine kommenden Termine."}</p>`;
+  document.getElementById("cal").innerHTML = html;
+  const sel = document.getElementById("monat");
+  sel.innerHTML = `<option value="">Monat …</option>` + [...document.querySelectorAll("#cal h2")].map(h=>`<option value="${h.id}">${h.textContent}</option>`).join("");
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===filter)));
+
+  // Namensleiste nur bei Diensten
+  const nb = document.getElementById("namebar"), ps = document.getElementById("person");
+  nb.classList.toggle("on", !!liste);
+  if(liste){
+    const gruppe = filter==="rein";
+    document.getElementById("person-l").textContent = gruppe ? "Gruppe" : "Name";
+    ps.innerHTML = `<option value="">${gruppe?"Alle Gruppen":"Alle Namen"}</option>` + liste.map(n=>`<option value="${esc(n)}"${n===pf?" selected":""}>${esc(n)}</option>`).join("");
+    ps.classList.toggle("set", !!pf);
+    document.getElementById("count").textContent = pf ? (hits===1 ? "1 Termin" : `${hits} Termine`) : "";
+  }
+}
+
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+  filter = c.dataset.f; try{localStorage.setItem("kal-filter",filter);}catch(e){} render();
+}));
+
+document.getElementById("person").addEventListener("change",e=>{
+  person[filter] = e.target.value; try{localStorage.setItem("kal-person",JSON.stringify(person));}catch(err){}
+  render(); window.scrollTo({top:0});
+});
+
+document.getElementById("monat").addEventListener("change",e=>{ const el=document.getElementById(e.target.value); if(el) el.scrollIntoView({block:"start"}); e.target.value=""; });
+render();
+</script>
+</body>
+</html>
