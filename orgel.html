@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Orgelplan Wolfenbüttel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
+<style>
+/* Layout: Eintragsliste nach Monaten wie der Gemeindekalender; links Datum, rechts Gottesdienst + Orgel-Feld; offene Termine deutlich markiert */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --sunday:#e9eef5; --fg:#1b2533; --muted:#5d6b7d; --line:#d6dde7;
+  --accent:#2f5d8c; --organ:#6b5a8c; --organ-soft:#eeeaf5; --open:#b06a12; --open-soft:#fbf1e3; --ok:#3c7a4f; --err:#9a3b3b;
+  --display:"Newsreader", Georgia, "Times New Roman", serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#11161d; --surface:#18202a; --sunday:#1d2733; --fg:#e6ebf2; --muted:#9aa8b9; --line:#2b3644;
+  --accent:#8fb6e0; --organ:#b7a6dc; --organ-soft:#262238; --open:#e5a858; --open-soft:#2e2416; --ok:#86c79a; --err:#e49393; color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:48px}
+h1{font-family:var(--display);font-weight:700;font-size:1.9rem;line-height:1.1;margin:0;text-wrap:balance}
+.lead{color:var(--muted);font-size:.9rem;margin:.5rem 0 0;max-width:62ch}
+.back{font-size:.85rem;color:var(--accent)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:.88rem;font-variant-numeric:tabular-nums}
+.stats b{color:var(--open)}
+.status{font-size:.85rem;color:var(--muted);margin-top:6px;min-height:1.2em}
+.status.warn{color:var(--err)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;margin-top:12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--organ);border-color:var(--organ);color:var(--bg)}
+.chip:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tag.ferien{border-color:var(--ok);color:var(--ok)}
+h2{font-family:var(--display);font-weight:500;font-size:1.4rem;margin:28px 0 8px;scroll-margin-top:170px;display:flex;align-items:baseline;gap:10px}
+h2 small{font-family:var(--body);font-size:.8rem;color:var(--muted);font-weight:400}
+.day{display:grid;grid-template-columns:58px 1fr;gap:12px;padding:10px;border-radius:8px}
+.day + .day{margin-top:2px}
+.day.sun{background:var(--sunday)}
+.date{text-align:center;font-variant-numeric:tabular-nums}
+.date .wd{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.date .n{display:block;font-family:var(--display);font-size:1.6rem;font-weight:700;line-height:1}
+.items{min-width:0;display:flex;flex-direction:column;gap:6px}
+.feast{font-family:var(--display);font-weight:700;font-size:1.02rem;color:var(--accent)}
+.svc{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.svc .t{font-variant-numeric:tabular-nums;font-weight:700;font-size:.9rem}
+.svc .ti{font-weight:700}
+.tag{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--muted);background:var(--surface)}
+.organ{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.organ.free{border-style:dashed;border-color:var(--open);background:var(--open-soft)}
+.organ.taken{border-color:var(--organ);background:var(--organ-soft)}
+.organ .lbl,.step .lbl,.wa .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.organ .who{font-weight:700;color:var(--organ);font-size:1.02rem}
+.organ.free .who{color:var(--open);font-weight:400;font-style:italic;font-size:.95rem}
+.organ .note{font-size:.85rem;color:var(--muted)}
+.organ .acts{margin-left:auto;display:flex;gap:6px}
+.btn{font:inherit;font-size:.85rem;border-radius:6px;padding:5px 12px;cursor:pointer;border:1px solid var(--organ);background:var(--organ);color:var(--bg);font-weight:700}
+.btn.ghost{background:transparent;color:var(--muted);border-color:var(--line);font-weight:400}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.row.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:2px}
+.row.nowrap{flex-wrap:nowrap}
+.rl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:46px;flex:none}
+.chip.sm{padding:4px 10px;white-space:nowrap;flex:none}
+.chip.free{border-color:var(--open);color:var(--open)}
+.picks{display:flex;flex-wrap:wrap;gap:6px}
+.other{display:flex;flex-wrap:wrap;gap:6px}
+.other input{font:inherit;font-size:.95rem;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:5px 8px;min-width:0;flex:1 1 120px}
+.other input.n2{flex:2 1 160px}
+.panel{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.step{display:flex;flex-direction:column;gap:8px}
+.step + .step{border-top:1px solid var(--line);padding-top:12px}
+.step .lbl b{color:var(--fg);font-weight:700}
+.pill{font:inherit;font-size:1rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:8px 18px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.pill[aria-pressed="true"]{background:var(--organ);border-color:var(--organ);color:var(--bg);font-weight:700}
+.pill.lead[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.pill:disabled{opacity:.5;cursor:default}
+.hint{font-size:.8rem;color:var(--muted)}
+.can{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:.85rem}
+.can .lbl{margin-right:2px}
+.can .n{border:1px solid var(--organ);color:var(--organ);border-radius:999px;padding:0 8px;font-size:.8rem}
+.can .none{color:var(--muted);font-style:italic}
+.dl{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.dl > .row{width:100%}
+.songs{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center}
+.songs label{font-size:.85rem;color:var(--muted)}
+.songs input{font:inherit;font-size:.95rem;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:5px 8px;min-width:0;width:100%;box-sizing:border-box}
+.lieder{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:.85rem;width:100%}
+.lieder span b{font-weight:400;color:var(--muted)}
+.panel-foot{display:flex;justify-content:flex-end}
+.wa{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;border:1px solid var(--ok);background:var(--bg)}
+.wa textarea{font:inherit;font-size:.92rem;line-height:1.4;width:100%;box-sizing:border-box;min-height:8.5em;resize:vertical;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--surface);color:var(--fg)}
+.wa .row{justify-content:space-between}
+.btn.wa-btn{background:var(--ok);border-color:var(--ok)}
+.empty{color:var(--muted);font-size:.95rem;padding:24px 0}
+details{margin-top:28px;color:var(--muted);font-size:.88rem}
+summary{cursor:pointer;color:var(--fg);font-weight:700}
+@media (max-width:420px){.day{grid-template-columns:48px 1fr;gap:10px;padding:10px 6px}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="./">← Gemeindekalender</a>
+    <h1>Orgelplan Wolfenbüttel</h1>
+    <p class="lead">Wer orgeln kann, tippt beim Termin auf „Eintragen“ und setzt bei seinem Namen ein Häkchen. Danach wird pro Termin festgelegt, wer verantwortlich ist, und es werden Eingangslied, Bußlied und Ausgangslied eingetragen. Ändert sich der Verantwortliche, erscheint eine fertige Nachricht, die man kopieren und in WhatsApp einfügen kann.</p>
+    <div class="stats" id="stats"></div>
+    <div class="dl" id="dl"><div class="row scroll" role="toolbar" aria-label="Zeitraum für den Export"><span class="rl">Export</span><span id="exrange" class="row nowrap"></span></div><button class="btn ghost" type="button" id="dl-xlsx">Als Excel herunterladen</button><button class="btn ghost" type="button" id="dl-pdf">Als PDF herunterladen</button></div>
+    <div class="status" id="status">Einträge werden geladen …</div>
+  </header>
+
+  <div class="bar" aria-label="Filter">
+    <div class="row" role="toolbar" aria-label="Termine">
+      <button class="chip" data-f="all" aria-pressed="true">Alle</button>
+      <button class="chip" data-f="open" aria-pressed="false">Noch offen</button>
+      <button class="chip" data-f="wed" aria-pressed="false">Mittwoch</button>
+      <button class="chip" data-f="sun" aria-pressed="false">Sonntag</button>
+    </div>
+    <div class="row" role="toolbar" aria-label="Nach Name filtern"><span class="rl">Name</span><span id="persons" class="row"></span></div>
+    <div class="row scroll" role="toolbar" aria-label="Zu Monat springen"><span class="rl">Monat</span><span id="months" class="row nowrap"></span></div>
+  </div>
+
+  <main id="plan"></main>
+
+  <details>
+    <summary>So funktioniert's</summary>
+    <p>Beim Termin auf „Eintragen“ tippen. <strong>Schritt 1:</strong> Alle, die an dem Tag grundsätzlich können, tippen ihren Namen an (Häkchen). <strong>Schritt 2:</strong> Aus diesen Namen wird einer als verantwortlich gewählt (Stern). So sieht man auf einen Blick, wer einspringen könnte. Wer nicht in der Liste steht, trägt seinen Namen im Feld „Anderer Name“ ein. Änderungen sehen die anderen nach wenigen Sekunden oder beim Neuladen der Seite.</p>
+    <p>„Noch offen“ zeigt die Termine ohne Verantwortlichen. Ein Tipp auf einen Namen zeigt alle Termine, an denen die Person kann.</p>
+    <p>Grün markiert sind die Schulferien in Niedersachsen. Ausgelassen sind die Termine ohne Gottesdienst (23.12., 30.12., 31.12.2026 und Mi 06.01.2027).</p>
+  </details>
+</div>
+
+<script>
+// Adresse der Google-Web-App (endet auf /exec). Leer = noch nicht verbunden.
+const API = "";
+
+const FEASTS = {
+  "2026-11-15":"Volkstrauertag","2026-11-18":"Buß- und Bettag","2026-11-22":"Totensonntag","2026-11-29":"1. Advent",
+  "2026-12-06":"2. Advent","2026-12-13":"3. Advent","2026-12-20":"4. Advent","2026-12-25":"1. Weihnachtstag",
+  "2027-03-21":"Palmsonntag","2027-03-28":"Ostersonntag","2027-05-16":"Pfingstsonntag","2027-10-03":"Tag der Deutschen Einheit",
+  "2027-11-14":"Volkstrauertag","2027-11-17":"Buß- und Bettag","2027-11-21":"Totensonntag","2027-11-28":"1. Advent",
+  "2027-12-05":"2. Advent","2027-12-12":"3. Advent","2027-12-19":"4. Advent","2027-12-26":"2. Weihnachtstag"
+};
+// Gottesdienste aus dem Gemeindekalender: [Zeit, Titel, Hinweis]
+const GD = {
+  "2026-11-11":["19:30","Gottesdienst","IPTV aus Seesen"],
+  "2026-11-15":["10:00","Gottesdienst","IPTV aus Wolfenbüttel"],
+  "2026-11-18":["19:30","Gottesdienst zum Buß- und Bettag","IPTV aus Wolfenbüttel"],
+  "2026-11-22":["10:00","Gottesdienst + Reli-/Konfigottesdienst","IPTV aus Seesen"],
+  "2026-11-25":["19:30","Gottesdienst","IPTV aus Seesen"],
+  "2026-11-29":["10:00","Gottesdienst zum 1. Advent","IPTV aus Wolfenbüttel"],
+  "2026-12-20":["10:00","Festgottesdienst mit Stammapostel","Übertragung aus Barnim"],
+  "2026-12-25":["","Weihnachtsgottesdienst","Kinderbeitrag"],
+  "2026-12-27":["","Jahresabschlussgottesdienst",""],
+  "2027-01-03":["","Erster Gottesdienst 2027",""],
+  "2027-03-21":["10:00","Gottesdienst mit Stammapostel","Übertragung aus Erfurt"],
+  "2027-04-18":["10:00","Konfirmation","mit Gemeinde Bad Harzburg"],
+  "2027-05-16":["10:00","Pfingstgottesdienst mit Stammapostel","Übertragung aus München"],
+  "2027-07-01":["16:00","Seniorengottesdienst Bezirke WF und BS","Apostel Vicariesmann"],
+  "2027-08-08":["10:00","Gottesdienst mit Apostel Vicariesmann","mit Gemeinde Salzgitter-Bad"],
+  "2027-11-21":["10:00","Ämtergottesdienst mit Stammapostel","Übertragung aus Winterthur"],
+  "2027-11-24":["19:30","Gottesdienst mit Bezirksapostel Heynes","in Salzgitter-Bad"],
+  "2027-12-05":["10:00","Gottesdienst mit Stammapostel","Übertragung aus Dresden"]
+};
+// Schulferien Niedersachsen
+const FERIEN = [
+  ["2026-12-23","2027-01-09","Weihnachtsferien"],["2027-02-01","2027-02-02","Halbjahresferien"],
+  ["2027-03-22","2027-04-03","Osterferien"],["2027-05-07","2027-05-07","Ferientag"],["2027-05-18","2027-05-18","Ferientag"],
+  ["2027-07-08","2027-08-18","Sommerferien"],["2027-10-16","2027-10-30","Herbstferien"],["2027-12-23","2028-01-08","Weihnachtsferien"]
+];
+const ferienFor = k => (FERIEN.find(f=>k>=f[0]&&k<=f[1])||[])[2]||"";
+const SKIP = new Set(["2026-12-23","2026-12-30","2026-12-31","2027-01-06"]);
+
+const WD=["So","Mo","Di","Mi","Do","Fr","Sa"];
+const WDL=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+function pad(n){return String(n).padStart(2,"0")}
+function iso(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dstr=k=>k.split("-").reverse().join(".");
+
+// Türschlüsseldienst WF, Gruppe je Woche (Stand 08.11.2026)
+const TUER = {"2026-11-09":5,"2026-11-16":1,"2026-11-23":2,"2026-11-30":3,"2026-12-07":4,"2026-12-14":5,"2026-12-21":1,"2026-12-28":2};
+(function(){ const d=new Date(2027,0,4); let g=3; for(let i=0;i<52;i++){ const m=new Date(d); m.setDate(d.getDate()+7*i); TUER[iso(m)]=g; g=g%5+1; } })();
+function tuerGroup(d){ const m=new Date(d); m.setDate(m.getDate()-(m.getDay()+6)%7); return TUER[iso(m)]; }
+
+// Termine: alle Mi + So bis Ende 2027, plus Sondertermine
+const SLOTS=[];
+(function(){
+  const today=iso(new Date());
+  for(let d=new Date(2026,10,1); d<=new Date(2027,11,31); d.setDate(d.getDate()+1)){
+    const k=iso(d), dow=d.getDay();
+    if(k<today || SKIP.has(k)) continue;
+    if(dow!==0 && dow!==3 && !GD[k]) continue;
+    const g=GD[k]||[];
+    SLOTS.push({k, dow, date:new Date(d), time:g[0]||(dow===3?"19:30":"10:00"), title:g[1]||"Gottesdienst", hint:g[2]||"", feast:FEASTS[k]||"", tuer:tuerGroup(d), ferien:ferienFor(k)});
+  }
+})();
+
+const ORGANISTEN=["Frank","Jörn","Thorsten","Werner"];
+const SONGS=[["eingang","Eingangslied"],["buss","Bußlied"],["ausgang","Ausgangslied"]];
+let entries={}, filter="all", person="", openForm=null, canWrite=!!API, loaded=false, busy=false, draftNote=null, waMsg=null, draftSongs=null;
+// Datenmodell je Termin: {kann:{Name:true}, name:Verantwortlich, note, lieder:{eingang,buss,ausgang}}
+const lead=k=>((entries[k]&&entries[k].name)||"").trim();
+const isTaken=k=>!!lead(k);
+function canList(k){ const e=entries[k]||{}; const l=Object.keys(e.kann||{}).filter(n=>e.kann[n]===true); const v=lead(k); if(v&&!l.includes(v)) l.push(v); return l.sort((a,b)=>a.localeCompare(b,"de")); }
+function allNames(){ const set=new Set(ORGANISTEN); Object.keys(entries).forEach(k=>canList(k).forEach(n=>set.add(n))); return [...set].sort((a,b)=>a.localeCompare(b,"de")); }
+
+function render(){
+  const plan=document.getElementById("plan");
+  const names=allNames();
+  if(person&&!names.includes(person)) person="";
+  document.getElementById("persons").innerHTML=
+    `<button class="chip sm" data-p="" aria-pressed="${!person}">Alle</button>`+
+    names.map(n=>`<button class="chip sm" data-p="${esc(n)}" aria-pressed="${n===person}">${esc(n)}</button>`).join("");
+  let html="", month="", shown=0; const monthChips=[];
+  for(const s of SLOTS){
+    const e=entries[s.k]||{}, v=lead(s.k), can=canList(s.k);
+    if(filter==="open"&&v) continue;
+    if(filter==="wed"&&s.dow!==3) continue;
+    if(filter==="sun"&&s.dow!==0) continue;
+    if(person&&!can.includes(person)) continue;
+    const mk=s.date.getFullYear()+"-"+(s.date.getMonth()+1);
+    if(mk!==month){ month=mk;
+      const ms=SLOTS.filter(x=>x.date.getFullYear()===s.date.getFullYear()&&x.date.getMonth()===s.date.getMonth());
+      const free=ms.filter(x=>!isTaken(x.k)).length;
+      monthChips.push(`<button class="chip sm${free?" free":""}" data-m="m-${mk}">${MONTHS[s.date.getMonth()].slice(0,3)} ${String(s.date.getFullYear()).slice(2)}${free?` · ${free}`:""}</button>`);
+      html+=`<h2 id="m-${mk}">${MONTHS[s.date.getMonth()]} ${s.date.getFullYear()}<small>${free?free+" ohne Verantwortlichen":"alle besetzt"}</small></h2>`; }
+    shown++;
+    let organ;
+    if(openForm===s.k){
+      const note = draftNote!==null ? draftNote : (e.note||"");
+      organ=`<div class="panel" data-k="${s.k}">
+        <div class="step"><span class="lbl"><b>1.</b> Wer kann? Namen antippen zum Ein- oder Austragen</span>
+          <div class="picks">${names.map(n=>{const on=can.includes(n);return `<button type="button" class="pill" data-can="${esc(n)}" aria-pressed="${on}"${busy?" disabled":""}>${on?"✓ ":""}${esc(n)}</button>`;}).join("")}</div>
+          <form class="other" data-k="${s.k}"><input id="n-${s.k}" name="name" placeholder="Anderer Name" maxlength="40" aria-label="Anderer Name"><button class="btn ghost" type="submit"${busy?" disabled":""}>Hinzufügen</button></form></div>
+        <div class="step"><span class="lbl"><b>2.</b> Wer ist verantwortlich?</span>
+          ${can.length?`<div class="picks">${can.map(n=>{const on=n===v;return `<button type="button" class="pill lead" data-lead="${esc(n)}" aria-pressed="${on}"${busy?" disabled":""}>${on?"★ ":""}${esc(n)}</button>`;}).join("")}</div><span class="hint">Nochmal antippen hebt die Auswahl auf.</span>`:`<span class="hint">Erst in Schritt 1 eintragen, wer kann.</span>`}</div>
+        ${waMsg&&waMsg.k===s.k?`<div class="wa"><span class="lbl"><b>Verantwortlich geändert</b> · Nachricht für WhatsApp</span>
+          <textarea id="wa-${s.k}" readonly aria-label="Nachricht für WhatsApp">${esc(waMsg.text)}</textarea>
+          <div class="row"><button class="btn wa-btn" type="button" data-copy="${s.k}">Text kopieren</button><button class="btn ghost" type="button" data-wa-close>Ausblenden</button></div></div>`:""}
+        <div class="step"><span class="lbl">Lieder</span>
+          <div class="songs">${SONGS.map(([f,l])=>{ const sv=draftSongs&&draftSongs[f]!==undefined?draftSongs[f]:((e.lieder||{})[f]||""); return `<label for="s-${f}-${s.k}">${l}</label><input id="s-${f}-${s.k}" data-song="${f}" placeholder="Nr. oder Titel" value="${esc(sv)}" maxlength="80">`; }).join("")}</div>
+          <div class="other"><button class="btn ghost" type="button" data-songs="${s.k}"${busy?" disabled":""}>Lieder speichern</button></div></div>
+        <div class="step"><span class="lbl">Hinweis (optional)</span>
+          <div class="other"><input id="x-${s.k}" class="n2" name="note" placeholder="z. B. Reli/Konfi: Werner" value="${esc(note)}" maxlength="80" aria-label="Hinweis"><button class="btn ghost" type="button" data-note="${s.k}"${busy?" disabled":""}>Hinweis speichern</button></div></div>
+        <div class="panel-foot"><button class="btn" type="button" data-close>Fertig</button></div></div>`;
+    } else {
+      const canHtml = can.length ? `<span class="lbl">Können</span>${can.map(n=>`<span class="n">${esc(n)}</span>`).join("")}` : `<span class="none">Noch niemand hat sich eingetragen</span>`;
+      organ=`<div class="organ ${v?"taken":"free"}"><span class="lbl">Verantwortlich</span><span class="who">${v?esc(v):"noch offen"}</span>${e.note?`<span class="note">${esc(e.note)}</span>`:""}
+        ${canWrite&&loaded?`<span class="acts"><button class="btn${v?" ghost":""}" data-edit="${s.k}">${v?"Bearbeiten":"Eintragen"}</button></span>`:""}
+        <div class="can" style="width:100%">${canHtml}</div>
+        ${SONGS.some(([f])=>(e.lieder||{})[f])?`<div class="lieder">${SONGS.filter(([f])=>(e.lieder||{})[f]).map(([f,l])=>`<span><b>${l}:</b> ${esc(e.lieder[f])}</span>`).join("")}</div>`:""}</div>`;
+    }
+    html+=`<section class="day${s.dow===0?" sun":""}" id="d-${s.k}"><div class="date"><span class="wd">${WD[s.dow]}</span><span class="n">${s.date.getDate()}</span></div>
+      <div class="items">${s.feast?`<div class="feast">${esc(s.feast)}</div>`:""}
+      <div class="svc"><span class="t">${s.time}</span><span class="ti">${esc(s.title)}</span>${s.hint?`<span class="tag">${esc(s.hint)}</span>`:""}${s.tuer?`<span class="tag">Tür: Gr. ${s.tuer}</span>`:""}${s.ferien?`<span class="tag ferien">${esc(s.ferien)}</span>`:""}</div>
+      ${organ}</div></section>`;
+  }
+  const fy=window.scrollY;
+  plan.innerHTML = shown ? html : `<p class="empty">${person?esc(person)+" ist noch für keinen Termin eingetragen.":"Keine Termine in dieser Ansicht."}</p>`;
+  window.scrollTo(0,fy);
+  document.getElementById("months").innerHTML=monthChips.join("");
+  const free=SLOTS.filter(x=>!isTaken(x.k)).length;
+  const next4=SLOTS.slice(0,8).filter(x=>!isTaken(x.k)).length;
+  document.getElementById("stats").innerHTML=`<span>${SLOTS.length} Termine</span><span>${SLOTS.length-free} mit Verantwortlichem</span><span><b>${free} offen</b></span>${next4?`<span><b>${next4}</b> davon in den nächsten 4 Wochen</span>`:""}`;
+  document.querySelectorAll(".chip[data-f]").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.f===filter)));
+}
+
+function setStatus(t,warn){ const s=document.getElementById("status"); s.textContent=t; s.className="status"+(warn?" warn":""); }
+
+// Export: Excel und PDF mit dem aktuellen Stand
+const EXH=["Tag","Datum","Uhrzeit","Verantwortlich"];
+let exRange="";
+const MKEYS=[...new Set(SLOTS.map(s=>s.k.slice(0,7)))];
+const mLabel=m=>MONTHS[+m.slice(5)-1]+" "+m.slice(0,4);
+function renderRange(){
+  document.getElementById("exrange").innerHTML=`<button class="chip sm" data-x="" aria-pressed="${!exRange}">Alles</button>`+
+    MKEYS.map(m=>`<button class="chip sm" data-x="${m}" aria-pressed="${m===exRange}">${MONTHS[+m.slice(5)-1].slice(0,3)} ${m.slice(2,4)}</button>`).join("");
+}
+document.getElementById("exrange").addEventListener("click",ev=>{ const b=ev.target.closest("[data-x]"); if(!b) return; exRange=b.dataset.x; renderRange(); });
+renderRange();
+const exSlots=()=>SLOTS.filter(s=>!exRange||s.k.startsWith(exRange));
+const exTitle=()=>exRange?mLabel(exRange):"alle Termine";
+const exFile=ext=>"Orgelplan_Wolfenbuettel_"+(exRange?mLabel(exRange).replace(" ","_").replace("ä","ae"):"gesamt")+"."+ext;
+function exportRows(){ return exSlots().map(s=>[WDL[s.dow],dstr(s.k),s.time,lead(s.k)||"offen"]); }
+function loadScript(src){ return new Promise((ok,no)=>{ if(document.querySelector(`script[src="${src}"]`)) return ok(); const t=document.createElement("script"); t.src=src; t.onload=ok; t.onerror=no; document.head.appendChild(t); }); }
+const stamp=()=>{ const d=new Date(); return pad(d.getDate())+"."+pad(d.getMonth()+1)+"."+d.getFullYear(); };
+function saveFile(data,name,type){
+  const url=URL.createObjectURL(new Blob([data],{type}));
+  const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+async function doExport(kind,btn){
+  const label=btn.textContent; btn.disabled=true; btn.textContent="Wird erstellt …";
+  try{
+    if(kind==="xlsx"){
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+      const ws=XLSX.utils.aoa_to_sheet([["Orgelplan Wolfenbüttel – "+exTitle()],["Stand: "+stamp()],[],EXH,...exportRows()]);
+      ws["!cols"]=[12,12,9,20].map(w=>({wch:w}));
+      ws["!autofilter"]={ref:"A4:D"+(4+exSlots().length)};
+      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Orgelplan");
+      saveFile(new Uint8Array(XLSX.write(wb,{bookType:"xlsx",type:"array"})),exFile("xlsx"),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    } else {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+      const doc=new window.jspdf.jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+      doc.setFontSize(14); doc.text("Orgelplan Wolfenbüttel – "+exTitle(),12,13);
+      doc.setFontSize(8); doc.setTextColor(93,107,125); doc.text("Stand: "+stamp()+" · Sonntage hinterlegt, offene Termine orange",12,18);
+      const rows=exportRows();
+      doc.autoTable({head:[EXH],body:rows,startY:22,margin:{left:10,right:10},tableWidth:120,styles:{fontSize:9,cellPadding:1.6,lineColor:[214,221,231],lineWidth:0.1},
+        headStyles:{fillColor:[107,90,140],textColor:255},
+        didParseCell:c=>{ if(c.section!=="body") return; const r=rows[c.row.index];
+          if(r[0]==="Sonntag") c.cell.styles.fillColor=[233,238,245];
+          if(c.column.index===3){ if(r[3]==="offen"){ c.cell.styles.textColor=[176,106,18]; c.cell.styles.fontStyle="italic"; } else { c.cell.styles.textColor=[107,90,140]; c.cell.styles.fontStyle="bold"; } } }});
+      saveFile(doc.output("arraybuffer"),exFile("pdf"),"application/pdf");
+    }
+    setStatus((kind==="xlsx"?"Excel":"PDF")+"-Datei gespeichert.");
+  }catch(e){
+    setStatus("Die Datei konnte nicht erstellt werden. Bitte später noch einmal versuchen.",true);
+  }finally{ btn.disabled=false; btn.textContent=label; }
+}
+document.getElementById("dl-xlsx").addEventListener("click",e=>doExport("xlsx",e.currentTarget));
+document.getElementById("dl-pdf").addEventListener("click",e=>doExport("pdf",e.currentTarget));
+
+// Speicher: Google-Tabelle über die Web-App. Änderungen werden dort zusammengeführt.
+async function load(){
+  const r=await fetch(API+"?t="+Date.now(),{cache:"no-store"});
+  const j=await r.json();
+  if(j.entries) entries=j.entries;
+}
+async function write(k,patch,msg){
+  if(busy) return; busy=true; render();
+  try{
+    const r=await fetch(API,{method:"POST",body:JSON.stringify({k,patch})});
+    const j=await r.json();
+    if(j.error) throw new Error(j.error);
+    if(j.entries) entries=j.entries;
+    setStatus(msg);
+  }catch(e){
+    setStatus("Speichern hat nicht geklappt. Bitte noch einmal versuchen.",true);
+  }finally{ busy=false; render(); }
+}
+function waText(k,neu,alt){
+  const s=SLOTS.find(x=>x.k===k), e=entries[k]||{};
+  const kopf=`${WDL[s.dow]}, ${dstr(k)}${s.time?`, ${s.time} Uhr`:""}`;
+  const anlass=[s.feast,s.title].filter(Boolean).join(" · ");
+  const andere=canList(k).filter(n=>n!==neu&&n!==alt);
+  const L=["🎹 *Orgeldienst Wolfenbüttel*","",`📅 ${kopf}`,anlass];
+  if(neu){
+    L.push("",`Verantwortlich ist jetzt: *${neu}*`);
+    if(alt) L.push(`(bisher: ${alt})`);
+    if(andere.length) L.push(`Könnten einspringen: ${andere.join(", ")}`);
+  } else {
+    L.push("",`Für diesen Termin ist im Moment *niemand verantwortlich*${alt?` (bisher: ${alt})`:""}.`);
+    L.push(andere.length?`Zeit hätten: ${andere.join(", ")}. Wer übernimmt?`:"Wer kann übernehmen? Bitte im Orgelplan eintragen.");
+  }
+  if(e.note) L.push(`Hinweis: ${e.note}`);
+  L.push("",`👉 ${location.href.split("#")[0]}`,"","Danke! 😊");
+  return L.join("\n");
+}
+function toggleCan(k,n){
+  const on=canList(k).includes(n);
+  const patch={kann:{[n]:!on}};
+  if(on&&lead(k)===n){ patch.name=""; waMsg={k,text:waText(k,"",n)}; }
+  write(k,patch, on? n+" am "+dstr(k)+" ausgetragen." : n+" kann am "+dstr(k)+".");
+}
+
+document.getElementById("plan").addEventListener("click",ev=>{
+  const b=ev.target.closest("button"); if(!b) return;
+  const k=openForm;
+  if(b.dataset.can){ toggleCan(k,b.dataset.can); }
+  else if(b.dataset.copy){
+    const ta=document.getElementById("wa-"+b.dataset.copy);
+    const done=()=>{ b.textContent="Kopiert ✓"; setTimeout(()=>{ b.textContent="Text kopieren"; },2000); };
+    const fallback=()=>{ ta.focus(); ta.select(); setStatus("Text ist markiert. Jetzt lange tippen und „Kopieren“ wählen."); };
+    try{ navigator.clipboard.writeText(waMsg.text).then(done,fallback); }catch(e){ fallback(); }
+  }
+  else if(b.hasAttribute("data-wa-close")){ waMsg=null; render(); }
+  else if(b.dataset.lead){ const n=b.dataset.lead, off=lead(k)===n; waMsg={k,text:waText(k,off?"":n,lead(k))}; write(k,{name:off?"":n,kann:{[n]:true}}, off?"Verantwortung am "+dstr(k)+" aufgehoben.":n+" ist am "+dstr(k)+" verantwortlich."); }
+  else if(b.dataset.songs){
+    const cur=(entries[k]||{}).lieder||{}, l={};
+    SONGS.forEach(([f])=>{ const el=document.getElementById(`s-${f}-${k}`); l[f]=(el?el.value:(cur[f]||"")).trim(); });
+    draftSongs=null; write(k,{lieder:l},"Lieder gespeichert.");
+  }
+  else if(b.dataset.note){ const el=document.getElementById("x-"+k); const v=(el?el.value:(draftNote??"")).trim(); draftNote=null; write(k,{note:v},"Hinweis gespeichert."); }
+  else if(b.dataset.edit){ openForm=b.dataset.edit; draftNote=null; draftSongs=null; waMsg=null; render(); }
+  else if(b.hasAttribute("data-close")){ openForm=null; draftNote=null; draftSongs=null; waMsg=null; render(); }
+});
+document.getElementById("plan").addEventListener("input",ev=>{ if(ev.target.name==="note") draftNote=ev.target.value; if(ev.target.dataset.song){ draftSongs=draftSongs||{}; draftSongs[ev.target.dataset.song]=ev.target.value; } });
+document.getElementById("plan").addEventListener("submit",ev=>{
+  ev.preventDefault();
+  const f=ev.target, k=f.dataset.k, n=f.elements.name.value.trim().replace(/,/g," ");
+  if(!n || canList(k).includes(n)) return;
+  write(k,{kann:{[n]:true}}, n+" kann am "+dstr(k)+".");
+});
+document.querySelectorAll(".chip[data-f]").forEach(c=>c.addEventListener("click",()=>{ filter=c.dataset.f; openForm=null; try{localStorage.setItem("orgel-filter",filter);}catch(e){} render(); }));
+document.getElementById("persons").addEventListener("click",ev=>{ const b=ev.target.closest("[data-p]"); if(!b) return; person=b.dataset.p; openForm=null; render(); });
+document.getElementById("months").addEventListener("click",ev=>{ const b=ev.target.closest("[data-m]"); if(!b) return; const el=document.getElementById(b.dataset.m); if(el) el.scrollIntoView({block:"start"}); });
+try{ filter=localStorage.getItem("orgel-filter")||"all"; }catch(e){}
+if(!["all","open","wed","sun"].includes(filter)) filter="all";
+
+render();
+
+// Laden und alle 20 Sekunden auffrischen (nicht während jemand gerade einträgt)
+(async()=>{
+  if(!API){ setStatus("Der Orgelplan ist noch nicht mit der Google-Tabelle verbunden.",true); return; }
+  try{ await load(); loaded=true; setStatus(""); }
+  catch(e){ setStatus("Die Einträge lassen sich gerade nicht laden. Bitte Verbindung prüfen und neu laden.",true); }
+  render();
+  const refresh=async()=>{ if(busy||openForm||document.hidden) return; try{ await load(); if(!loaded){ loaded=true; setStatus(""); } render(); }catch(e){} };
+  setInterval(refresh,20000);
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) refresh(); });
+})();
+</script>
+</body>
+</html>
