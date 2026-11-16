@@ -83,6 +83,10 @@ dt{font-weight:700;color:var(--fg)}
 dd{margin:0}
 @media (max-width:420px){.day{grid-template-columns:48px 1fr;gap:10px;padding:10px 6px}.ev{grid-template-columns:42px 1fr}.empty{padding-left:58px}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+.search{flex-basis:100%;display:flex}
+.search input{flex:1;min-width:0;font:inherit;font-size:1rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:8px 14px}
+.search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+mark{background:#ffe58a;color:inherit;border-radius:2px}
 .pdfsel{font:inherit;font-size:.85rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:6px 10px}
 #print{display:none}
 #print .ph h1{font-family:var(--display);font-size:1.6rem;margin:0}
@@ -112,6 +116,7 @@ dd{margin:0}
   </header>
 
   <div class="bar" role="toolbar" aria-label="Filter">
+    <label class="search"><span class="sr">Suchen</span><input type="search" id="q" placeholder="Suchen … (z. B. Seesen, Jugendabend, Verena)" autocomplete="off"></label>
     <button class="chip" id="f-all" data-f="all" aria-pressed="true">Alle</button>
     <button class="chip" id="f-gd" data-f="gd" aria-pressed="false"><span class="dot legend-dot cat-gd"></span>Gottesdienste</button>
     <button class="chip" id="f-gem" data-f="gem" aria-pressed="false"><span class="dot legend-dot cat-gem"></span>Gemeinde</button>
@@ -413,7 +418,7 @@ function bibelLinks(html){
   });
 }
 
-let filter = "all", person = {}, showPast = false;
+let filter = "all", person = {}, showPast = false, query = "";
 try{ showPast = localStorage.getItem("kal-past")==="1"; }catch(e){}
 try{ filter = localStorage.getItem("kal-filter") || "all"; }catch(e){}
 try{ person = JSON.parse(localStorage.getItem("kal-person")||"{}") || {}; }catch(e){ person = {}; }
@@ -427,10 +432,18 @@ function render(opts){
   let pf = (liste && person[F]) || "";
   if(pf && !liste.includes(pf)) pf = "";
   let html = "", month = -1, head = "", hits = 0;
-  const out = s => { html += head + s; head = ""; hits++; };
+  const Q = opts.target ? "" : query.trim().toLowerCase();
+  const out = s => {
+    if(Q){
+      const txt = s.replace(/<[^>]+>/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ").toLowerCase();
+      if(!Q.split(" ").every(w=>txt.includes(w))) return;
+      Q.split(" ").forEach(w=>{ if(w.length>1){ const re = new RegExp("(>[^<]*?)("+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi"); s = s.replace(re,(m,a,b)=>a+"<mark>"+b+"</mark>"); } });
+    }
+    html += head + s; head = ""; hits++;
+  };
   for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
     const k = iso(d), dow = d.getDay();
-    if(k < todayIso && !opts.all && (opts.target || !showPast)) continue;
+    if(k < todayIso && !opts.all && (opts.target || !(showPast || Q))) continue;
     if(d.getMonth()!==month){ month=d.getMonth(); head = `<h2 id="m-${d.getFullYear()}-${month+1}">${MONTHS[month]} ${d.getFullYear()}</h2>`; }
     let evs = EVENTS.filter(e=>e[0]===k);
     const feast = FEASTS[k];
@@ -469,7 +482,7 @@ function render(opts){
     if(!attached && (tuer||rein) && (F==="all")) items += `<div>${rein}${tuer}</div>`;
     out(`<section class="${cls.join(" ")}" id="d-${k}"><div class="date"><span class="wd">${WD[dow]}</span><span class="n">${d.getDate()}</span></div><div class="items">${items}</div></section>`);
   }
-  if(!html) html = `<p class="none">${pf ? `Keine kommenden Termine für ${esc(pf)}.` : "Keine kommenden Termine."}</p>`;
+  if(!html) html = `<p class="none">${Q ? `Keine Treffer für „${esc(query.trim())}“.` : pf ? `Keine kommenden Termine für ${esc(pf)}.` : "Keine kommenden Termine."}</p>`;
   if(opts.target){ document.getElementById(opts.target).innerHTML = html; return; }
   document.getElementById("cal").innerHTML = html;
   const sel = document.getElementById("monat");
@@ -503,6 +516,8 @@ document.getElementById("person").addEventListener("change",e=>{
   person[filter] = e.target.value; try{localStorage.setItem("kal-person",JSON.stringify(person));}catch(err){}
   render(); window.scrollTo({top:0});
 });
+
+document.getElementById("q").addEventListener("input",e=>{ query = e.target.value; render(); });
 
 document.getElementById("monat").addEventListener("change",e=>{ const el=document.getElementById(e.target.value); if(el) el.scrollIntoView({block:"start"}); e.target.value=""; });
 
