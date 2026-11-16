@@ -121,6 +121,7 @@ dd{margin:0}
     <button class="chip" id="f-orgel" data-f="orgel" aria-pressed="false"><span class="dot legend-dot cat-orgel"></span>Orgel</button>
     <button class="chip" id="f-blumen" data-f="blumen" aria-pressed="false"><span class="dot legend-dot cat-blumen"></span>Blumen</button>
     <button class="chip" id="f-tuer" data-f="tuer" aria-pressed="false"><span class="dot legend-dot cat-tuer"></span>Türdienst</button>
+    <button class="chip" id="past" aria-pressed="false" title="Vergangene Termine anzeigen">Vergangene</button>
     <label class="jump"><span class="sr">Monat</span><select id="monat" aria-label="Zu Monat springen"></select></label>
     <label><span class="sr">PDF</span><select id="pdf" class="pdfsel" aria-label="Monat als PDF speichern"></select></label>
     <div class="namebar" id="namebar">
@@ -412,7 +413,8 @@ function bibelLinks(html){
   });
 }
 
-let filter = "all", person = {};
+let filter = "all", person = {}, showPast = false;
+try{ showPast = localStorage.getItem("kal-past")==="1"; }catch(e){}
 try{ filter = localStorage.getItem("kal-filter") || "all"; }catch(e){}
 try{ person = JSON.parse(localStorage.getItem("kal-person")||"{}") || {}; }catch(e){ person = {}; }
 
@@ -428,7 +430,7 @@ function render(opts){
   const out = s => { html += head + s; head = ""; hits++; };
   for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
     const k = iso(d), dow = d.getDay();
-    if(k < todayIso && !opts.all) continue;
+    if(k < todayIso && !opts.all && (opts.target || !showPast)) continue;
     if(d.getMonth()!==month){ month=d.getMonth(); head = `<h2 id="m-${d.getFullYear()}-${month+1}">${MONTHS[month]} ${d.getFullYear()}</h2>`; }
     let evs = EVENTS.filter(e=>e[0]===k);
     const feast = FEASTS[k];
@@ -472,7 +474,8 @@ function render(opts){
   document.getElementById("cal").innerHTML = html;
   const sel = document.getElementById("monat");
   sel.innerHTML = `<option value="">Monat …</option>` + [...document.querySelectorAll("#cal h2")].map(h=>`<option value="${h.id}">${h.textContent}</option>`).join("");
-  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===filter)));
+  document.querySelectorAll(".chip[data-f]").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===filter)));
+  document.getElementById("past").setAttribute("aria-pressed", String(showPast));
 
   // Namensleiste nur bei Diensten
   const nb = document.getElementById("namebar"), ps = document.getElementById("person");
@@ -486,7 +489,13 @@ function render(opts){
   }
 }
 
-document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+document.getElementById("past").addEventListener("click",()=>{
+  showPast = !showPast; try{localStorage.setItem("kal-past", showPast?"1":"0");}catch(e){}
+  render();
+  if(showPast){ const t = [...document.querySelectorAll("#cal .day")].find(x=>x.id.slice(2) >= iso(new Date())); if(t) t.scrollIntoView({block:"start"}); }
+});
+
+document.querySelectorAll(".chip[data-f]").forEach(c=>c.addEventListener("click",()=>{
   filter = c.dataset.f; try{localStorage.setItem("kal-filter",filter);}catch(e){} render();
 }));
 
