@@ -89,7 +89,7 @@ dd{margin:0}
 <div class="wrap">
   <header>
     <h1>Gemeindekalender Wolfenbüttel</h1>
-    <p class="stand">Stand: Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (Januar–Juni, September–Dezember) · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan November 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p>
+    <p class="stand">Stand: Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan November 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p>
   </header>
 
   <div class="bar" role="toolbar" aria-label="Filter">
@@ -144,7 +144,7 @@ const FEASTS = {
   "2026-12-31":"Silvester",
   "2027-01-01":"Neujahr","2027-03-07":"Gottesdienst für Entschlafene","2027-03-21":"Palmsonntag","2027-03-25":"Gründonnerstag","2027-03-26":"Karfreitag",
   "2027-03-28":"Ostersonntag · Beginn der Sommerzeit","2027-03-29":"Ostermontag","2027-05-01":"Tag der Arbeit","2027-05-06":"Christi Himmelfahrt","2027-05-09":"Muttertag",
-  "2027-05-16":"Pfingstsonntag","2027-05-17":"Pfingstmontag","2027-09-21":"Internationaler Gebetstag für den Frieden","2027-10-03":"Tag der Deutschen Einheit · Erntedank","2027-10-31":"Reformationstag · Ende der Sommerzeit","2027-11-07":"Gottesdienst für Entschlafene",
+  "2027-05-16":"Pfingstsonntag","2027-05-17":"Pfingstmontag","2027-07-04":"Gottesdienst für Entschlafene","2027-09-21":"Internationaler Gebetstag für den Frieden","2027-10-03":"Tag der Deutschen Einheit · Erntedank","2027-10-31":"Reformationstag · Ende der Sommerzeit","2027-11-07":"Gottesdienst für Entschlafene",
   "2027-11-14":"Volkstrauertag","2027-11-17":"Buß- und Bettag","2027-11-21":"Totensonntag",
   "2027-11-28":"1. Advent","2027-12-05":"2. Advent","2027-12-12":"3. Advent","2027-12-19":"4. Advent",
   "2027-12-24":"Heiligabend","2027-12-25":"1. Weihnachtstag","2027-12-26":"2. Weihnachtstag","2027-12-31":"Silvester"
@@ -258,9 +258,18 @@ const EVENTS = [
   ["2027-06-27","10:00","jug","Jugendgottesdienst in Seesen","mit Gemeinde"],
   ["2027-06-27","","jug","Religions- und Konfirmandenunterricht in Seesen",""],
   ["2027-06-28","19:30","amt","Vorsteherversammlung","Videokonferenz"],
-  // 2027 aus dem Quartalsplan (Vorschau)
-  ["2027-07-01","16:00","gd","Seniorengottesdienst Bezirke WF und BS","in Wolfenbüttel, Apostel Vicariesmann"],
+  // Quartalsplan 2027 vom 13.11.2026 (Juli–August)
+  ["2027-07-01","16:00","gd","Seniorengottesdienst mit Apostel Vicariesmann","für die Bezirke Wolfenbüttel und Braunschweig, in Wolfenbüttel"],
+  ["2027-07-08","","gem","Ferien","08.07.–18.08.2027, bitte selbst überprüfen"],
   ["2027-08-08","10:00","gd","Gottesdienst mit Apostel Vicariesmann","in Wolfenbüttel, mit Gemeinde Salzgitter-Bad"],
+  ["2027-08-17","19:00","amt","Bezirksämterversammlung mit Apostel Vicariesmann","Videokonferenz"],
+  ["2027-08-19","19:30","jug","Virtueller Stuhlkreis Lehrkräfte",""],
+  ["2027-08-22","10:00","jug","Kinder- und Familiengottesdienst regional – Seesen und Wolfenbüttel","„Schulstart“"],
+  ["2027-08-23","19:00","amt","Bezirksämterversammlung Wolfenbüttel","Videokonferenz"],
+  ["2027-08-24","19:30","jug","Jugendabend","in Seesen"],
+  ["2027-08-26","19:30","amt","„Predigt das Evangelium“ – Präsenz in Salzgitter-Bad","alle AT"],
+  ["2027-08-29","","jug","Religions- und Konfirmandenunterricht in Seesen",""],
+  ["2027-08-30","19:30","amt","Vorsteherversammlung","in Salzgitter-Bad"],
   // Quartalsplan 2027 vom 13.11.2026 (September–Dezember)
   ["2027-09-03","","jug","Jugendtag Apostelbereich Mitte-Nord","03.–05.09.2027"],
   ["2027-09-05","10:00","jug","Gottesdienst mit Apostel Vicariesmann zum Jugendtag",""],
