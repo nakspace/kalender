@@ -90,8 +90,8 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
 .pdfbtn{border-color:var(--accent);color:var(--accent)}
 .pdfbox{flex-basis:100%;font-size:.85rem;color:var(--muted)}
 .pdfbox[hidden]{display:none}
-#pdflist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-#pdflist button{font:inherit;font-size:.85rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}
+#pdflist,.explist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+#pdflist button,.explist button{font:inherit;font-size:.85rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}
 #print{display:none}
 #print .ph h1{font-family:var(--display);font-size:1.6rem;margin:0}
 #print .ph p{margin:.2rem 0 .6rem;color:#555;font-size:.8rem}
@@ -133,7 +133,9 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
     <button class="chip" id="past" aria-pressed="false" title="Vergangene Termine anzeigen">Vergangene</button>
     <label class="jump"><span class="sr">Monat</span><select id="monat" aria-label="Zu Monat springen"></select></label>
     <button class="chip pdfbtn" id="pdfbtn" aria-expanded="false" aria-controls="pdfbox">PDF</button>
+    <button class="chip pdfbtn" id="xlsbtn" aria-expanded="false" aria-controls="xlsbox">Excel</button>
     <div class="pdfbox" id="pdfbox" hidden><span>Monat als PDF:</span><div id="pdflist"></div></div>
+    <div class="pdfbox" id="xlsbox" hidden><span>Als Excel-Tabelle herunterladen:</span><div id="xlslist" class="explist"></div></div>
     <div class="namebar" id="namebar">
       <label for="person" id="person-l">Name</label>
       <select id="person"></select>
@@ -545,6 +547,45 @@ document.getElementById("monat").addEventListener("change",e=>{ const el=documen
     box.hidden = true; btn.setAttribute("aria-expanded","false");
     window.print();
     document.title = t;
+  });
+})();
+
+// Excel-Export (CSV mit Semikolon, öffnet direkt in Excel/Numbers)
+const CAT = {gd:"Gottesdienst",gem:"Gemeinde",jug:"Jugend & Kinder",amt:"Ämter & Bezirk",off:"entfällt"};
+function exportCsv(start,end,name){
+  const rows = [["Datum","Wochentag","Uhrzeit","Termin","Details","Kategorie","Feiertag","Türdienst","Reinigung","Blumen","Orgel"]];
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    const k = iso(d), dow = d.getDay(), evs = EVENTS.filter(e=>e[0]===k);
+    const cancelled = evs.some(e=>e[2]==="off");
+    let tuer = "";
+    if((dow===0||dow===3) && !cancelled){ const t = tuerFor(d); if(t) tuer = `Gr. ${t[1]}: ` + ((dow===3 && t[4]) || (dow===0 && t[5]) || t[2]) + (t[3]?" (getauscht)":""); }
+    const rg = reinFor(d), rein = rg ? "Gruppe "+rg : "", blumen = cancelled ? "" : (BLUMEN[k]||""), orgel = ORGEL[k]||"", feast = FEASTS[k]||"";
+    const datum = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+    const dienste = (e,first) => first ? [tuer,rein,blumen,orgel] : ["","","",""];
+    if(!evs.length){ if(feast||tuer||rein||blumen||orgel) rows.push([datum,WD[dow],"","","","",feast,tuer,rein,blumen,orgel]); continue; }
+    evs.slice().sort((a,b)=>(a[1]||"99").localeCompare(b[1]||"99")).forEach((e,i)=>{
+      const det = [e[4], ...(e[5]||[]), e[6]].filter(Boolean).join(" · ");
+      rows.push([datum,WD[dow],e[1]||"",e[3],det,CAT[e[2]]||e[2],i?"":feast,...dienste(e,i===0)]);
+    });
+  }
+  const csv = "\uFEFF" + rows.map(r=>r.map(v=>{ v=String(v); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download = name + ".csv"; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+(function(){
+  const btn = document.getElementById("xlsbtn"), box = document.getElementById("xlsbox"), list = document.getElementById("xlslist");
+  let o = `<button type="button" data-all="1">Alle Termine</button>`;
+  for(let d=new Date(2026,10,1); d<=new Date(2027,11,1); d.setMonth(d.getMonth()+1))
+    o += `<button type="button" data-y="${d.getFullYear()}" data-m="${d.getMonth()}">${MONTHS[d.getMonth()].slice(0,3)} ${String(d.getFullYear()).slice(2)}</button>`;
+  list.innerHTML = o;
+  btn.addEventListener("click",()=>{ box.hidden = !box.hidden; btn.setAttribute("aria-expanded", String(!box.hidden)); document.getElementById("pdfbox").hidden = true; });
+  document.getElementById("pdfbtn").addEventListener("click",()=>{ box.hidden = true; });
+  list.addEventListener("click",e=>{
+    const b = e.target.closest("button"); if(!b) return;
+    if(b.dataset.all) exportCsv(new Date(2026,10,1), new Date(2027,11,31), "Gemeindekalender WF 2026-2027");
+    else { const y=+b.dataset.y, m=+b.dataset.m; exportCsv(new Date(y,m,1), new Date(y,m+1,0), `Gemeindekalender WF ${MONTHS[m]} ${y}`); }
   });
 })();
 render();
