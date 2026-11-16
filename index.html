@@ -91,7 +91,10 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
 .pdfbox{flex-basis:100%;font-size:.85rem;color:var(--muted)}
 .pdfbox[hidden]{display:none}
 #pdflist,.explist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-#pdflist button,.explist button{font:inherit;font-size:.85rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}
+.xbtn{display:inline-block;text-decoration:none}
+.hint{margin:6px 0 0;font-size:.8rem}
+.hint code{user-select:all;word-break:break-all}
+#pdflist button,.explist button,.explist .xbtn{font:inherit;font-size:.85rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:8px;padding:8px 10px;cursor:pointer}
 #print{display:none}
 #print .ph h1{font-family:var(--display);font-size:1.6rem;margin:0}
 #print .ph p{margin:.2rem 0 .6rem;color:#555;font-size:.8rem}
@@ -134,6 +137,15 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
     <label class="jump"><span class="sr">Monat</span><select id="monat" aria-label="Zu Monat springen"></select></label>
     <button class="chip pdfbtn" id="pdfbtn" aria-expanded="false" aria-controls="pdfbox">PDF</button>
     <button class="chip pdfbtn" id="xlsbtn" aria-expanded="false" aria-controls="xlsbox">Excel</button>
+    <button class="chip pdfbtn" id="icsbtn" aria-expanded="false" aria-controls="icsbox">Kalender</button>
+    <div class="pdfbox" id="icsbox" hidden><span>In den eigenen Kalender übernehmen (aktualisiert sich automatisch):</span>
+      <div class="explist">
+        <a class="xbtn" href="https://calendar.google.com/calendar/r?cid=webcal%3A%2F%2Fnakspace.github.io%2Fkalender%2Fkalender.ics" target="_blank" rel="noopener">Google Kalender</a>
+        <a class="xbtn" href="webcal://nakspace.github.io/kalender/kalender.ics">iPhone / Apple / Outlook</a>
+        <a class="xbtn" href="kalender.ics" download="Gemeindekalender WF.ics">Datei (.ics) laden</a>
+      </div>
+      <p class="hint">Adresse zum Abonnieren: <code>https://nakspace.github.io/kalender/kalender.ics</code></p>
+    </div>
     <div class="pdfbox" id="pdfbox" hidden><span>Monat als PDF:</span><div id="pdflist"></div></div>
     <div class="pdfbox" id="xlsbox" hidden><span>Als Excel-Tabelle herunterladen:</span><div id="xlslist" class="explist"></div></div>
     <div class="namebar" id="namebar">
@@ -580,8 +592,10 @@ function exportCsv(start,end,name){
   for(let d=new Date(2026,10,1); d<=new Date(2027,11,1); d.setMonth(d.getMonth()+1))
     o += `<button type="button" data-y="${d.getFullYear()}" data-m="${d.getMonth()}">${MONTHS[d.getMonth()].slice(0,3)} ${String(d.getFullYear()).slice(2)}</button>`;
   list.innerHTML = o;
-  btn.addEventListener("click",()=>{ box.hidden = !box.hidden; btn.setAttribute("aria-expanded", String(!box.hidden)); document.getElementById("pdfbox").hidden = true; });
-  document.getElementById("pdfbtn").addEventListener("click",()=>{ box.hidden = true; });
+  btn.addEventListener("click",()=>{ box.hidden = !box.hidden; btn.setAttribute("aria-expanded", String(!box.hidden)); document.getElementById("pdfbox").hidden = true; document.getElementById("icsbox").hidden = true; });
+  document.getElementById("pdfbtn").addEventListener("click",()=>{ box.hidden = true; document.getElementById("icsbox").hidden = true; });
+  const ib = document.getElementById("icsbtn"), ibox = document.getElementById("icsbox");
+  ib.addEventListener("click",()=>{ ibox.hidden = !ibox.hidden; ib.setAttribute("aria-expanded", String(!ibox.hidden)); box.hidden = true; document.getElementById("pdfbox").hidden = true; });
   list.addEventListener("click",e=>{
     const b = e.target.closest("button"); if(!b) return;
     if(b.dataset.all) exportCsv(new Date(2026,10,1), new Date(2027,11,31), "Gemeindekalender WF 2026-2027");
