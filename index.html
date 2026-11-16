@@ -407,12 +407,14 @@ function render(){
     const cls = ["day"]; if(dow===0) cls.push("sun"); if(k<todayIso) cls.push("past"); if(k===todayIso) cls.push("today");
     let items = feast ? `<div class="feast">${esc(feast)}</div>` : "";
     shown.sort((a,b)=>(a[1]||"99").localeCompare(b[1]||"99"));
+    const isInfo = e => String(e[3]).startsWith("Info:");
+    let attached = false;
     shown.forEach((e,i)=>{
       const tags = (e[5]||[]).map(x=>`<span class="tag">${esc(x)}${x==="Reinigungsgruppe 3"?` <strong class="hl-red">Verena</strong>`:""}</span>`).join("");
-      const tAttach = (i===0 && (e[2]==="gd") && filter!=="amt") ? rein+tuer : "";
+      const tAttach = (!attached && i===shown.findIndex(x=>x[2]==="gd"&&!isInfo(x)) && filter!=="amt") ? (attached=true, rein+tuer) : "";
       items += `<div class="ev cat-${e[2]}${e[2]==="off"?" cancel":""}"><span class="t">${e[1]||""}</span><div class="what"><div class="ti">${esc(e[3])}</div>${e[4]?`<div class="sub">${bibelLinks(esc(e[4]))}</div>`:""}${e[6]?`<div class="note">${esc(e[6])}</div>`:""}${tags||tAttach?`<div>${tags}${tAttach}</div>`:""}</div></div>`;
     });
-    if(!shown.some(e=>e[2]==="gd") && (tuer||rein) && (filter==="all")) items += `<div>${rein}${tuer}</div>`;
+    if(!attached && (tuer||rein) && (filter==="all")) items += `<div>${rein}${tuer}</div>`;
     out(`<section class="${cls.join(" ")}" id="d-${k}"><div class="date"><span class="wd">${WD[dow]}</span><span class="n">${d.getDate()}</span></div><div class="items">${items}</div></section>`);
   }
   if(!html) html = `<p class="none">${pf ? `Keine kommenden Termine für ${esc(pf)}.` : "Keine kommenden Termine."}</p>`;
