@@ -83,6 +83,25 @@ dt{font-weight:700;color:var(--fg)}
 dd{margin:0}
 @media (max-width:420px){.day{grid-template-columns:48px 1fr;gap:10px;padding:10px 6px}.ev{grid-template-columns:42px 1fr}.empty{padding-left:58px}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+.pdfsel{font:inherit;font-size:.85rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:6px 10px}
+#print{display:none}
+#print .ph h1{font-family:var(--display);font-size:1.6rem;margin:0}
+#print .ph p{margin:.2rem 0 .6rem;color:#555;font-size:.8rem}
+@page{size:A4;margin:12mm}
+@media print{
+  :root,:root[data-theme="dark"]{--bg:#fff;--surface:#fff;--sunday:#eef2f7;--fg:#000;--muted:#444;--line:#bbb;--accent:#2f5d8c;
+    --c-gd:#2f5d8c;--c-gem:#3c7a4f;--c-jug:#b06a12;--c-amt:#6b5a8c;--c-off:#9a3b3b;--c-blume:#a8436f;color-scheme:light}
+  body{background:#fff;font-size:11pt}
+  body::before{display:none}
+  .wrap{max-width:none;padding:0}
+  .wrap>header,.bar,#cal,details{display:none!important}
+  #print{display:block}
+  #print h2{display:none}
+  .day{break-inside:avoid;padding:5px 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tag{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .lut{display:none}
+  a.bibel{color:inherit;text-decoration:none}
+}
 </style>
 </head>
 <body>
@@ -103,6 +122,7 @@ dd{margin:0}
     <button class="chip" id="f-blumen" data-f="blumen" aria-pressed="false"><span class="dot legend-dot cat-blumen"></span>Blumen</button>
     <button class="chip" id="f-tuer" data-f="tuer" aria-pressed="false"><span class="dot legend-dot cat-tuer"></span>Türdienst</button>
     <label class="jump"><span class="sr">Monat</span><select id="monat" aria-label="Zu Monat springen"></select></label>
+    <label><span class="sr">PDF</span><select id="pdf" class="pdfsel" aria-label="Monat als PDF speichern"></select></label>
     <div class="namebar" id="namebar">
       <label for="person" id="person-l">Name</label>
       <select id="person"></select>
@@ -111,6 +131,7 @@ dd{margin:0}
   </div>
 
   <main id="cal"></main>
+  <div id="print" aria-hidden="true"></div>
 
 
   <details>
@@ -251,7 +272,6 @@ const EVENTS = [
   ["2027-05-30","","jug","Religions- und Konfirmandenunterricht in Seesen",""],
   ["2027-05-31","19:30","amt","Vorsteherversammlung","in Salzgitter-Bad"],
   ["2027-06-07","19:00","amt","Bezirksämterversammlung Wolfenbüttel","Videokonferenz"],
-  ["2027-06-07","","amt","Bezirksapostel im Ruhestand Klingler","Vermerk aus dem Quartalsplan"],
   ["2027-06-15","19:30","jug","Jugendabend","in Wolfenbüttel"],
   ["2027-06-17","19:30","amt","„Predigt das Evangelium“ – Präsenz in Salzgitter-Bad","alle AT"],
   ["2027-06-20","","gem","Kinder- und Familientag",""],
@@ -396,17 +416,19 @@ let filter = "all", person = {};
 try{ filter = localStorage.getItem("kal-filter") || "all"; }catch(e){}
 try{ person = JSON.parse(localStorage.getItem("kal-person")||"{}") || {}; }catch(e){ person = {}; }
 
-function render(){
+function render(opts){
+  opts = opts || {};
+  const F = opts.filter || filter;
   const todayIso = iso(new Date());
-  const start = new Date(2026,10,1), end = (filter==="tuer"||filter==="rein") ? new Date(2028,0,2) : new Date(2027,11,31);
-  const liste = NAMEN[filter];
-  let pf = (liste && person[filter]) || "";
+  const start = opts.start || new Date(2026,10,1), end = opts.end || ((F==="tuer"||F==="rein") ? new Date(2028,0,2) : new Date(2027,11,31));
+  const liste = NAMEN[F];
+  let pf = (liste && person[F]) || "";
   if(pf && !liste.includes(pf)) pf = "";
   let html = "", month = -1, head = "", hits = 0;
   const out = s => { html += head + s; head = ""; hits++; };
   for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
     const k = iso(d), dow = d.getDay();
-    if(k < todayIso) continue;
+    if(k < todayIso && !opts.all) continue;
     if(d.getMonth()!==month){ month=d.getMonth(); head = `<h2 id="m-${d.getFullYear()}-${month+1}">${MONTHS[month]} ${d.getFullYear()}</h2>`; }
     let evs = EVENTS.filter(e=>e[0]===k);
     const feast = FEASTS[k];
@@ -426,26 +448,27 @@ function render(){
       const cls = ["day"]; if(dow===0) cls.push("sun"); if(k===todayIso) cls.push("today");
       return `<section class="${cls.join(" ")}" id="d-${k}"><div class="date"><span class="wd">${WD[dow]}</span><span class="n">${d.getDate()}</span></div><div class="items">${feast?`<div class="feast">${esc(feast)}</div>`:""}<div class="ev cat-${cat}"><span class="t">${cat==="rein"?"":gdTime()}</span><div class="what"><div class="ti">${title}</div><div>${content}</div></div></div></div></section>`;
     };
-    if(filter==="orgel"){ if(ORGEL[k] && (!pf || orgelNamen(ORGEL[k]).includes(pf))) out(single("orgel","Orgel",orgelTag(k))); continue; }
-    if(filter==="blumen"){ if(blumen && (!pf || BLUMEN[k]===pf)) out(single("blumen","Blumen",blumen)); continue; }
-    if(filter==="rein"){ if(rg && (!pf || pf==="Gruppe "+rg)) out(single("rein","Reinigung",reinTag(rg))); continue; }
-    if(filter==="tuer"){ if(tuer && (!pf || tuerNamen.includes(pf))) out(single("tuer","Türdienst",tuer)); continue; }
-    const shown = evs.filter(e=>filter==="all"||e[2]===filter||(e[2]==="off"&&filter==="gd"));
-    if(!shown.length && !feast && !(filter==="all" && (tuer||rein))) continue;
-    const cls = ["day"]; if(dow===0) cls.push("sun"); if(k<todayIso) cls.push("past"); if(k===todayIso) cls.push("today");
+    if(F==="orgel"){ if(ORGEL[k] && (!pf || orgelNamen(ORGEL[k]).includes(pf))) out(single("orgel","Orgel",orgelTag(k))); continue; }
+    if(F==="blumen"){ if(blumen && (!pf || BLUMEN[k]===pf)) out(single("blumen","Blumen",blumen)); continue; }
+    if(F==="rein"){ if(rg && (!pf || pf==="Gruppe "+rg)) out(single("rein","Reinigung",reinTag(rg))); continue; }
+    if(F==="tuer"){ if(tuer && (!pf || tuerNamen.includes(pf))) out(single("tuer","Türdienst",tuer)); continue; }
+    const shown = evs.filter(e=>F==="all"||e[2]===F||(e[2]==="off"&&F==="gd"));
+    if(!shown.length && !feast && !(F==="all" && (tuer||rein))) continue;
+    const cls = ["day"]; if(dow===0) cls.push("sun"); if(k<todayIso && !opts.all) cls.push("past"); if(k===todayIso) cls.push("today");
     let items = feast ? `<div class="feast">${esc(feast)}</div>` : "";
     shown.sort((a,b)=>(a[1]||"99").localeCompare(b[1]||"99"));
     const isInfo = e => String(e[3]).startsWith("Info:");
     let attached = false;
     shown.forEach((e,i)=>{
       const tags = (e[5]||[]).map(x=>`<span class="tag">${esc(x)}${x==="Reinigungsgruppe 3"?` <strong class="hl-red">Verena</strong>`:""}</span>`).join("");
-      const tAttach = (!attached && i===shown.findIndex(x=>x[2]==="gd"&&!isInfo(x)) && filter!=="amt") ? (attached=true, rein+tuer) : "";
+      const tAttach = (!attached && i===shown.findIndex(x=>x[2]==="gd"&&!isInfo(x)) && F!=="amt") ? (attached=true, rein+tuer) : "";
       items += `<div class="ev cat-${e[2]}${e[2]==="off"?" cancel":""}"><span class="t">${e[1]||""}</span><div class="what"><div class="ti">${esc(e[3])}</div>${e[4]?`<div class="sub">${bibelLinks(esc(e[4]))}</div>`:""}${e[6]?`<div class="note">${esc(e[6])}</div>`:""}${tags||tAttach?`<div>${tags}${tAttach}</div>`:""}</div></div>`;
     });
-    if(!attached && (tuer||rein) && (filter==="all")) items += `<div>${rein}${tuer}</div>`;
+    if(!attached && (tuer||rein) && (F==="all")) items += `<div>${rein}${tuer}</div>`;
     out(`<section class="${cls.join(" ")}" id="d-${k}"><div class="date"><span class="wd">${WD[dow]}</span><span class="n">${d.getDate()}</span></div><div class="items">${items}</div></section>`);
   }
   if(!html) html = `<p class="none">${pf ? `Keine kommenden Termine für ${esc(pf)}.` : "Keine kommenden Termine."}</p>`;
+  if(opts.target){ document.getElementById(opts.target).innerHTML = html; return; }
   document.getElementById("cal").innerHTML = html;
   const sel = document.getElementById("monat");
   sel.innerHTML = `<option value="">Monat …</option>` + [...document.querySelectorAll("#cal h2")].map(h=>`<option value="${h.id}">${h.textContent}</option>`).join("");
@@ -473,6 +496,25 @@ document.getElementById("person").addEventListener("change",e=>{
 });
 
 document.getElementById("monat").addEventListener("change",e=>{ const el=document.getElementById(e.target.value); if(el) el.scrollIntoView({block:"start"}); e.target.value=""; });
+
+// PDF-Export je Monat: Monat auswählen -> Druckansicht -> "Als PDF sichern"
+(function(){
+  const sel = document.getElementById("pdf");
+  let o = `<option value="">PDF …</option>`;
+  for(let d=new Date(2026,10,1); d<=new Date(2027,11,1); d.setMonth(d.getMonth()+1))
+    o += `<option value="${d.getFullYear()}-${d.getMonth()}">${MONTHS[d.getMonth()]} ${d.getFullYear()}</option>`;
+  sel.innerHTML = o;
+  sel.addEventListener("change",()=>{
+    if(!sel.value) return;
+    const [y,m] = sel.value.split("-").map(Number); sel.value = "";
+    render({filter:"all", all:true, start:new Date(y,m,1), end:new Date(y,m+1,0), target:"print"});
+    const pr = document.getElementById("print");
+    const stand = document.querySelector(".stand").textContent;
+    pr.insertAdjacentHTML("afterbegin", `<div class="ph"><h1>Gemeindekalender Wolfenbüttel – ${MONTHS[m]} ${y}</h1><p>${esc(stand)} · gedruckt am ${new Date().toLocaleDateString("de-DE")}</p></div>`);
+    const t = document.title; document.title = `Gemeindekalender WF ${MONTHS[m]} ${y}`;
+    setTimeout(()=>{ window.print(); document.title = t; }, 50);
+  });
+})();
 render();
 </script>
 </body>
