@@ -87,4 +87,7 @@ for (const [k, list] of Object.entries(byDay)) {
 }
 L.push("END:VCALENDAR");
 fs.writeFileSync(path.join(__dirname, "kalender.ics"), L.join("\r\n") + "\r\n");
+// Build-Stempel in index.html setzen (damit Browser alte Fassungen im Cache erkennen und neu laden)
+const build = new Date().toISOString().replace(/[-:]/g,"").slice(0,15);
+fs.writeFileSync(path.join(__dirname, "index.html"), html.replace(/<meta name="build" content="[^"]*">/, `<meta name="build" content="${build}">`));
 console.log("kalender.ics geschrieben:", L.filter(l => l === "BEGIN:VEVENT").length, "Einträge");
