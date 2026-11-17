@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build" content="20261117T043501">
+<meta name="build" content="20261117T043940">
 <title>Gemeindekalender Wolfenbüttel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
@@ -93,7 +93,12 @@ dt{font-weight:700;color:var(--fg)}
 dd{margin:0}
 @media (max-width:420px){.day{grid-template-columns:48px 1fr;gap:10px;padding:10px 6px}.ev{grid-template-columns:42px 1fr}.empty{padding-left:58px}}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-.search{flex-basis:100%;display:flex}
+.search{flex-basis:100%;display:flex;gap:8px;align-items:center}
+.search label{flex:1;display:flex;min-width:0}
+#morebtn{flex:none;border-color:var(--accent);color:var(--accent)}
+#morebtn.active{background:var(--accent);color:var(--bg)}
+.more{flex-basis:100%;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.more[hidden]{display:none}
 .search input{flex:1;min-width:0;font:inherit;font-size:1rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:8px 14px}
 .search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 mark{background:#ffe58a;color:inherit;border-radius:2px}
@@ -133,7 +138,8 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
   </header>
 
   <div class="bar" role="toolbar" aria-label="Filter">
-    <label class="search"><span class="sr">Suchen</span><input type="search" id="q" placeholder="Suchen … (z. B. Seesen, Jugendabend, Verena)" autocomplete="off"></label>
+    <div class="search"><label><span class="sr">Suchen</span><input type="search" id="q" placeholder="Suchen …" autocomplete="off"></label><button class="chip" id="morebtn" aria-expanded="false" aria-controls="more">Filter ▾</button></div>
+    <div class="more" id="more">
     <button class="chip" id="f-all" data-f="all" aria-pressed="true">Alle</button>
     <button class="chip" id="f-gd" data-f="gd" aria-pressed="false"><span class="dot legend-dot cat-gd"></span>Gottesdienste</button>
     <button class="chip" id="f-gem" data-f="gem" aria-pressed="false"><span class="dot legend-dot cat-gem"></span>Gemeinde</button>
@@ -158,6 +164,7 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
     </div>
     <div class="pdfbox" id="pdfbox" hidden><span>Monat als PDF:</span><div id="pdflist"></div></div>
     <div class="pdfbox" id="xlsbox" hidden><span>Als Excel-Tabelle herunterladen:</span><div id="xlslist" class="explist"></div></div>
+    </div>
     <div class="namebar" id="namebar">
       <label for="person" id="person-l">Name</label>
       <select id="person"></select>
@@ -518,6 +525,7 @@ function render(opts){
   sel.innerHTML = `<option value="">Monat …</option>` + [...document.querySelectorAll("#cal h2")].map(h=>`<option value="${h.id}">${h.textContent}</option>`).join("");
   document.querySelectorAll(".chip[data-f]").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===filter)));
   document.getElementById("past").setAttribute("aria-pressed", String(showPast));
+  setMoreLabel();
 
   // Namensleiste nur bei Diensten
   const nb = document.getElementById("namebar"), ps = document.getElementById("person");
@@ -612,6 +620,22 @@ function exportCsv(start,end,name){
     else { const y=+b.dataset.y, m=+b.dataset.m; exportCsv(new Date(y,m,1), new Date(y,m+1,0), `Gemeindekalender WF ${MONTHS[m]} ${y}`); }
   });
 })();
+// Filterleiste ein-/ausklappen (am Handy standardmäßig zu)
+const more = document.getElementById("more"), moreBtn = document.getElementById("morebtn");
+const FNAME = {all:"",gd:"Gottesdienste",gem:"Gemeinde",jug:"Jugend & Kinder",amt:"Ämter & Bezirk",rein:"Reinigung",orgel:"Orgel",blumen:"Blumen",tuer:"Türdienst"};
+function setMoreLabel(){
+  const f = FNAME[filter]||"", extra = [f, showPast?"Vergangene":""].filter(Boolean).join(", ");
+  moreBtn.textContent = (extra ? "Filter: "+extra : "Filter") + (more.hidden ? " ▾" : " ▴");
+  moreBtn.classList.toggle("active", !!extra);
+  moreBtn.setAttribute("aria-expanded", String(!more.hidden));
+}
+(function(){
+  let open = window.matchMedia("(min-width:601px)").matches;
+  try{ const v = localStorage.getItem("kal-more"); if(v!==null) open = v==="1"; }catch(e){}
+  more.hidden = !open;
+  moreBtn.addEventListener("click",()=>{ more.hidden = !more.hidden; try{localStorage.setItem("kal-more", more.hidden?"0":"1");}catch(e){} setMoreLabel(); });
+})();
+
 // Kurze Stand-Zeile aus dem Build-Stempel (z. B. 20261117T053400 -> 17.11.2026)
 (function(){
   const b = (document.querySelector('meta[name="build"]')||{}).content||"";
