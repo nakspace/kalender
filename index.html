@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build" content="20261116T183349">
+<meta name="build" content="20261117T043501">
 <title>Gemeindekalender Wolfenbüttel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
@@ -31,7 +31,13 @@
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45}
 .wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:48px}
 header h1{font-family:var(--display);font-weight:700;font-size:1.9rem;line-height:1.1;margin:0;text-wrap:balance}
-.stand{color:var(--muted);font-size:.85rem;margin:.4rem 0 0}
+.stand{color:var(--muted);font-size:.85rem;margin:.3rem 0 0}
+details.standbox{margin:.3rem 0 0;font-size:.85rem;color:var(--muted)}
+details.standbox summary{font-weight:400;color:var(--muted);cursor:pointer;list-style:none;display:inline}
+details.standbox summary::-webkit-details-marker{display:none}
+details.standbox summary::after{content:" · Quellen ▸";color:var(--accent)}
+details.standbox[open] summary::after{content:" · Quellen ▾"}
+@media (max-width:600px){header h1{font-size:1.5rem}.wrap{padding-top:calc(12px + env(safe-area-inset-top,0px))}}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;margin-top:12px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
@@ -123,7 +129,7 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
 <div class="wrap">
   <header>
     <h1>Gemeindekalender Wolfenbüttel</h1>
-    <p class="stand">Stand: Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan November 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p>
+    <details class="standbox"><summary id="standsum">Stand</summary><p class="stand">Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan November 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p></details>
   </header>
 
   <div class="bar" role="toolbar" aria-label="Filter">
@@ -557,7 +563,7 @@ document.getElementById("monat").addEventListener("change",e=>{ const el=documen
     const b = e.target.closest("button"); if(!b) return;
     const y = +b.dataset.y, m = +b.dataset.m;
     render({filter:"all", all:true, start:new Date(y,m,1), end:new Date(y,m+1,0), target:"print"});
-    const stand = document.querySelector(".stand").textContent;
+    const stand = document.getElementById("standsum").textContent + " · " + document.querySelector(".stand").textContent;
     document.getElementById("print").insertAdjacentHTML("afterbegin", `<div class="ph"><h1>Gemeindekalender Wolfenbüttel – ${MONTHS[m]} ${y}</h1><p>${esc(stand)} · gedruckt am ${new Date().toLocaleDateString("de-DE")}</p></div>`);
     const t = document.title; document.title = `Gemeindekalender WF ${MONTHS[m]} ${y}`;
     box.hidden = true; btn.setAttribute("aria-expanded","false");
@@ -605,6 +611,12 @@ function exportCsv(start,end,name){
     if(b.dataset.all) exportCsv(new Date(2026,10,1), new Date(2027,11,31), "Gemeindekalender WF 2026-2027");
     else { const y=+b.dataset.y, m=+b.dataset.m; exportCsv(new Date(y,m,1), new Date(y,m+1,0), `Gemeindekalender WF ${MONTHS[m]} ${y}`); }
   });
+})();
+// Kurze Stand-Zeile aus dem Build-Stempel (z. B. 20261117T053400 -> 17.11.2026)
+(function(){
+  const b = (document.querySelector('meta[name="build"]')||{}).content||"";
+  const m = b.match(/^(\d{4})(\d{2})(\d{2})/);
+  document.getElementById("standsum").textContent = m ? `Stand: ${m[3]}.${m[2]}.${m[1]}` : "Stand";
 })();
 render();
 
