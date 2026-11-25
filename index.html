@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build" content="20261124T144508">
+<meta name="build" content="20261125T195626">
 <title>Gemeindekalender Wolfenbüttel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
@@ -101,6 +101,7 @@ dd{margin:0}
 .more[hidden]{display:none}
 .search input{flex:1;min-width:0;font:inherit;font-size:1rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:8px 14px}
 .search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.backbtn{display:block;width:100%;margin:12px 0 0;font:inherit;font-size:.9rem;color:var(--accent);background:var(--surface);border:1px dashed var(--accent);border-radius:10px;padding:10px;cursor:pointer}
 mark{background:#ffe58a;color:inherit;border-radius:2px}
 .pdfbtn{border-color:var(--accent);color:var(--accent)}
 .pdfbox{flex-basis:100%;font-size:.85rem;color:var(--muted)}
@@ -520,7 +521,9 @@ function render(opts){
   }
   if(!html) html = `<p class="none">${Q ? `Keine Treffer für „${esc(query.trim())}“.` : pf ? `Keine kommenden Termine für ${esc(pf)}.` : "Keine kommenden Termine."}</p>`;
   if(opts.target){ document.getElementById(opts.target).innerHTML = html; return; }
-  document.getElementById("cal").innerHTML = html;
+  const backBtn = Q ? "" : `<button type="button" class="backbtn" id="backbtn">${showPast ? "Vergangene Wochen ausblenden ▾" : "↑ Vergangene Wochen anzeigen"}</button>`;
+  document.getElementById("cal").innerHTML = backBtn + html;
+  const bb = document.getElementById("backbtn"); if(bb) bb.addEventListener("click", togglePast);
   const sel = document.getElementById("monat");
   sel.innerHTML = `<option value="">Monat …</option>` + [...document.querySelectorAll("#cal h2")].map(h=>`<option value="${h.id}">${h.textContent}</option>`).join("");
   document.querySelectorAll(".chip[data-f]").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===filter)));
@@ -539,11 +542,13 @@ function render(opts){
   }
 }
 
-document.getElementById("past").addEventListener("click",()=>{
+function togglePast(){
   showPast = !showPast; try{localStorage.setItem("kal-past", showPast?"1":"0");}catch(e){}
   render();
   if(showPast){ const t = [...document.querySelectorAll("#cal .day")].find(x=>x.id.slice(2) >= iso(new Date())); if(t) t.scrollIntoView({block:"start"}); }
-});
+  else window.scrollTo({top:0});
+}
+document.getElementById("past").addEventListener("click", togglePast);
 
 document.querySelectorAll(".chip[data-f]").forEach(c=>c.addEventListener("click",()=>{
   filter = c.dataset.f; try{localStorage.setItem("kal-filter",filter);}catch(e){} render();
