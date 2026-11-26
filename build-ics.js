@@ -11,8 +11,8 @@ const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const dataPart = script.split("let filter =")[0]; // nur Daten + Hilfsfunktionen
 const ctx = {};
 vm.createContext(ctx);
-vm.runInContext(dataPart + "\nthis.D={FEASTS,EVENTS,ORGEL,BLUMEN,tuerFor,reinFor,iso};", ctx);
-const { FEASTS, EVENTS, ORGEL, BLUMEN, tuerFor, reinFor } = ctx.D;
+vm.runInContext(dataPart + "\nthis.D={FEASTS,EVENTS,ORGEL,DIRIGENT,BLUMEN,tuerFor,reinFor,iso};", ctx);
+const { FEASTS, EVENTS, ORGEL, DIRIGENT, BLUMEN, tuerFor, reinFor } = ctx.D;
 
 const CAT = { gd: "Gottesdienst", gem: "Gemeinde", jug: "Jugend & Kinder", amt: "Ämter & Bezirk", off: "entfällt" };
 const escTxt = s => String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
@@ -77,6 +77,7 @@ for (const [k, list] of Object.entries(byDay)) {
   const rg = reinFor(date); if (rg) dienste.push("Reinigung: Gruppe " + rg);
   if (!cancelled && BLUMEN[k]) dienste.push("Blumen: " + BLUMEN[k]);
   if (ORGEL[k]) dienste.push("Orgel: " + ORGEL[k]);
+  if (DIRIGENT[k]) dienste.push("Dirigent: " + DIRIGENT[k]);
   const main = list.find(e => e[2] === "gd" && !String(e[3]).startsWith("Info:"));
   list.forEach(e => {
     const parts = [e[4], ...(e[5] || []), e[6]].filter(Boolean);

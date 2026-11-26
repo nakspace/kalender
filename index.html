@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build" content="20261126T053238">
+<meta name="build" content="20261126T053628">
 <title>Gemeindekalender Wolfenbüttel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
@@ -66,6 +66,7 @@ h2{font-family:var(--display);font-weight:500;font-size:1.4rem;margin:28px 0 8px
 .tag.key{border-color:var(--accent);color:var(--accent)}
 .ev.cancel .ti{color:var(--c-off)}
 .tag.orgel{border-color:var(--c-amt);color:var(--c-amt)}
+.tag.dirigent{border-color:var(--c-gd);color:var(--c-gd)}
 .tag.blumen{border-color:var(--c-blume);color:var(--c-blume)}
 .jump{margin-left:auto}
 .jump select,.namebar select{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 10px}
@@ -135,7 +136,7 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
 <div class="wrap">
   <header>
     <h1>Gemeindekalender Wolfenbüttel</h1>
-    <details class="standbox"><summary id="standsum">Stand</summary><p class="stand">Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Dienstplan Dezember 2026 · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan Dezember 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p></details>
+    <details class="standbox"><summary id="standsum">Stand</summary><p class="stand">Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Dienstplan Dezember 2026 · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan Dezember 2026 · Dirigentendienste Dezember 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p></details>
   </header>
 
   <div class="bar" role="toolbar" aria-label="Filter">
@@ -416,6 +417,12 @@ const ORGEL = {
   "2026-12-02":"Frank","2026-12-06":"Frank","2026-12-09":"Werner","2026-12-13":"Thorsten",
   "2026-12-16":"Jörn","2026-12-20":"Übertragung (Thorsten)","2026-12-25":"Thorsten","2026-12-27":"Thorsten"
 };
+// Dirigentendienst (nur Vornamen), monatlich ergänzen
+const DIRIGENT = {
+  "2026-11-29":"Volker","2026-12-02":"Christine","2026-12-06":"Christine","2026-12-13":"Uwe",
+  "2026-12-20":"Übertragung (Thorsten)"
+};
+const dirTag = k => DIRIGENT[k] ? `<span class="tag dirigent">Dirigent: ${esc(DIRIGENT[k])}</span>` : "";
 const orgelTag = k => ORGEL[k] ? `<span class="tag orgel">Orgel: ${esc(ORGEL[k])}</span>` : "";
 const orgelNamen = s => (s.match(/[A-ZÄÖÜ][a-zäöüß]+/g)||[]).filter(w=>!["Übertragung","Reli","Konfi"].includes(w));
 
@@ -496,7 +503,7 @@ function render(opts){
       } else tuer = `<span class="tag">Tür: noch nicht eingeteilt</span>`;
     }
     const blumen = cancelled ? "" : blumenTag(k);
-    const rg = reinFor(d), rein = orgelTag(k) + blumen + (rg ? reinTag(rg) : "");
+    const rg = reinFor(d), rein = orgelTag(k) + dirTag(k) + blumen + (rg ? reinTag(rg) : "");
     const gdTime = () => { const gd = evs.find(e=>e[2]==="gd"); return gd&&gd[1]?gd[1]:""; };
     const single = (cat,title,content) => {
       const cls = ["day"]; if(dow===0) cls.push("sun"); if(k===todayIso) cls.push("today");
@@ -590,16 +597,16 @@ document.getElementById("monat").addEventListener("change",e=>{ const el=documen
 // Excel-Export (CSV mit Semikolon, öffnet direkt in Excel/Numbers)
 const CAT = {gd:"Gottesdienst",gem:"Gemeinde",jug:"Jugend & Kinder",amt:"Ämter & Bezirk",off:"entfällt"};
 function exportCsv(start,end,name){
-  const rows = [["Datum","Wochentag","Uhrzeit","Termin","Details","Kategorie","Feiertag","Türdienst","Reinigung","Blumen","Orgel"]];
+  const rows = [["Datum","Wochentag","Uhrzeit","Termin","Details","Kategorie","Feiertag","Türdienst","Reinigung","Blumen","Orgel","Dirigent"]];
   for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
     const k = iso(d), dow = d.getDay(), evs = EVENTS.filter(e=>e[0]===k);
     const cancelled = evs.some(e=>e[2]==="off");
     let tuer = "";
     if((dow===0||dow===3) && !cancelled){ const t = tuerFor(d); if(t) tuer = `Gr. ${t[1]}: ` + ((dow===3 && t[4]) || (dow===0 && t[5]) || t[2]) + (t[3]?" (getauscht)":""); }
-    const rg = reinFor(d), rein = rg ? "Gruppe "+rg : "", blumen = cancelled ? "" : (BLUMEN[k]||""), orgel = ORGEL[k]||"", feast = FEASTS[k]||"";
+    const rg = reinFor(d), rein = rg ? "Gruppe "+rg : "", blumen = cancelled ? "" : (BLUMEN[k]||""), orgel = ORGEL[k]||"", dir = DIRIGENT[k]||"", feast = FEASTS[k]||"";
     const datum = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
-    const dienste = (e,first) => first ? [tuer,rein,blumen,orgel] : ["","","",""];
-    if(!evs.length){ if(feast||tuer||rein||blumen||orgel) rows.push([datum,WD[dow],"","","","",feast,tuer,rein,blumen,orgel]); continue; }
+    const dienste = (e,first) => first ? [tuer,rein,blumen,orgel,dir] : ["","","","",""];
+    if(!evs.length){ if(feast||tuer||rein||blumen||orgel||dir) rows.push([datum,WD[dow],"","","","",feast,tuer,rein,blumen,orgel,dir]); continue; }
     evs.slice().sort((a,b)=>(a[1]||"99").localeCompare(b[1]||"99")).forEach((e,i)=>{
       const det = [e[4], ...(e[5]||[]), e[6]].filter(Boolean).join(" · ");
       rows.push([datum,WD[dow],e[1]||"",e[3],det,CAT[e[2]]||e[2],i?"":feast,...dienste(e,i===0)]);
