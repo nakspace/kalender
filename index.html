@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="build" content="20261125T195626">
+<meta name="build" content="20261126T053238">
 <title>Gemeindekalender Wolfenbüttel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap">
@@ -135,7 +135,7 @@ mark{background:#ffe58a;color:inherit;border-radius:2px}
 <div class="wrap">
   <header>
     <h1>Gemeindekalender Wolfenbüttel</h1>
-    <details class="standbox"><summary id="standsum">Stand</summary><p class="stand">Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Dienstplan Dezember 2026 · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan November 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p></details>
+    <details class="standbox"><summary id="standsum">Stand</summary><p class="stand">Gemeindebrief November 2026 · Quartalsplan vom 20.10.2026 · Quartalsplan 2027 vom 13.11.2026 (ganzes Jahr) · Dienstplan Dezember 2026 · Türschlüsseldienst WF vom 08.11.2026 · Orgelplan Dezember 2026 · Blumendienst vom 14.11.2026 · Bibelworte Dezember 2026</p></details>
   </header>
 
   <div class="bar" role="toolbar" aria-label="Filter">
@@ -412,7 +412,9 @@ const reinTag = g => `<span class="tag">Reinigungsgruppe ${g}${g===3?` <strong c
 const ORGEL = {
   "2026-11-01":"Übertragung (Frank)","2026-11-04":"Thorsten","2026-11-08":"Werner","2026-11-11":"Frank",
   "2026-11-15":"Thorsten","2026-11-18":"Thorsten","2026-11-22":"Thorsten · Reli/Konfi: Werner",
-  "2026-11-25":"Jörn","2026-11-29":"Werner"
+  "2026-11-25":"Jörn","2026-11-29":"Werner",
+  "2026-12-02":"Frank","2026-12-06":"Frank","2026-12-09":"Werner","2026-12-13":"Thorsten",
+  "2026-12-16":"Jörn","2026-12-20":"Übertragung (Thorsten)","2026-12-25":"Thorsten","2026-12-27":"Thorsten"
 };
 const orgelTag = k => ORGEL[k] ? `<span class="tag orgel">Orgel: ${esc(ORGEL[k])}</span>` : "";
 const orgelNamen = s => (s.match(/[A-ZÄÖÜ][a-zäöüß]+/g)||[]).filter(w=>!["Übertragung","Reli","Konfi"].includes(w));
